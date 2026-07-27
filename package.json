@@ -2,6 +2,7 @@
   "name": "ai-103-practice-exam",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "engines": {
     "node": ">=22.13.0"
   },

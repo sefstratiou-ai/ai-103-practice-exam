@@ -178,4 +178,4 @@ Passing this practice simulator does not guarantee a passing result on the certi
 
 ## License
 
-This repository does not currently include an open-source license. Add a `LICENSE` file before inviting redistribution or external contributions; without one, standard copyright restrictions apply.
+This project is available under the [MIT License](LICENSE).
