@@ -24,6 +24,7 @@ The simulator provides a full 50-question attempt, timed and study modes, case s
 - Answer explanations and direct links to supporting Microsoft Learn documentation
 - Domain-level scoring and a scaled practice score
 - No account, database, Azure subscription, API key, or telemetry required
+- Optional one-click deployment to GitHub Pages
 
 ## Exam composition
 
@@ -81,7 +82,7 @@ If script execution is restricted by local policy, use the standard `npm run dev
 
 ## Production mode
 
-To create and run a production build locally:
+To create and run the application build locally:
 
 ```bash
 npm run build
@@ -90,14 +91,42 @@ npm run start
 
 Open the URL printed by the server. Stop it with `Ctrl+C`.
 
+To build and preview the same static site deployed to GitHub Pages:
+
+```bash
+npm run build:pages
+npm run preview:pages
+```
+
+The static output is written to `out/`. This is a separate build target; it does not change the normal clone-and-run workflow above.
+
 ## Available commands
 
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the local development server |
+| `npm run dev:pages` | Start the standalone static-site development server |
 | `npm run build` | Create the production build |
+| `npm run build:pages` | Create the static GitHub Pages build in `out/` |
 | `npm run start` | Serve the production build locally |
-| `npm test` | Build the app and run all automated checks |
+| `npm run preview:pages` | Preview the static GitHub Pages build locally |
+| `npm test` | Build both targets and run all automated checks |
+
+## Deploy to GitHub Pages
+
+The repository includes a GitHub Actions workflow that tests the project, creates the static build, applies the correct repository subpath or custom-domain URL, and deploys the result.
+
+1. Push the project to a GitHub repository whose default branch is `main`.
+2. On GitHub, open the repository and select **Settings**.
+3. In the left sidebar, select **Pages**.
+4. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+5. Select the repository's **Actions** tab and open **Deploy to GitHub Pages**.
+6. Select **Run workflow**, choose `main`, and confirm. A push to `main` also starts the workflow automatically.
+7. Wait for both the `build` and `deploy` jobs to complete. The deployed URL appears in the workflow summary and under **Settings → Pages**.
+
+Future pushes to `main` automatically test and redeploy the site. If your default branch has a different name, update the branch under `on.push.branches` in `.github/workflows/deploy-pages.yml` before publishing.
+
+The workflow follows GitHub's [custom Pages workflow](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) model. No generated `out/` files need to be committed.
 
 ## Progress and privacy
 
@@ -114,6 +143,9 @@ Browser data is specific to the site origin. Changing the port, hostname, browse
 | `app/questionSelection.ts` | Per-attempt case and question selection with blueprint balancing |
 | `app/optionShuffle.ts` | Seeded answer-order randomization |
 | `app/globals.css` | Responsive simulator styling |
+| `static-site/` | Browser entry point for the standalone static build |
+| `vite.pages.config.ts` | GitHub Pages base-path and static-output configuration |
+| `.github/workflows/deploy-pages.yml` | Automated test, build, and Pages deployment workflow |
 | `tests/` | Question-bank, selection, randomization, rendering, and build checks |
 | `Start Exam.cmd` | Optional Windows launcher |
 

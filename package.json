@@ -8,9 +8,12 @@
   },
   "scripts": {
     "dev": "node scripts/vinext-run.mjs dev",
+    "dev:pages": "vite --config vite.pages.config.ts",
     "build": "node scripts/vinext-run.mjs build",
+    "build:pages": "vite build --config vite.pages.config.ts",
     "start": "node scripts/vinext-run.mjs start",
-    "test": "npm run build && node --import tsx --test tests/rendered-html.test.mjs tests/question-bank.test.ts tests/option-shuffle.test.ts tests/question-selection.test.ts",
+    "preview:pages": "vite preview --config vite.pages.config.ts",
+    "test": "npm run build && npm run build:pages && node --import tsx --test tests/rendered-html.test.mjs tests/pages-output.test.mjs tests/question-bank.test.ts tests/option-shuffle.test.ts tests/question-selection.test.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
