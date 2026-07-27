@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
-const projectRoot = new URL("../", import.meta.url);
+async function readDirectoryIfPresent(url) {
+  try {
+    return await readdir(url);
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+}
 
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -67,7 +74,10 @@ test("question bank has the intended blueprint distribution", async () => {
 });
 
 test("starter preview is fully removed and the social card exists", async () => {
-  assert.deepEqual(await readdir(new URL("../app/_sites-preview", import.meta.url)), []);
+  assert.deepEqual(
+    await readDirectoryIfPresent(new URL("../app/_sites-preview", import.meta.url)),
+    [],
+  );
   await access(new URL("../public/og.png", import.meta.url));
 
   const [page, layout, packageJson, simulator] = await Promise.all([
