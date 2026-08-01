@@ -6,9 +6,14 @@ import {
   CASE_STUDY_COUNT,
   createExamSelection,
   createExamSelectionFromIds,
+  DECISION_QUESTION_COUNT,
   domainQuestionTargets,
   EXAM_QUESTION_COUNT,
+  formatQuestionTargets,
   GENERAL_QUESTION_COUNT,
+  getQuestionFormatGroup,
+  INTERACTIVE_QUESTION_COUNT,
+  isInteractiveQuestion,
   QUESTIONS_PER_CASE_STUDY,
 } from "../app/questionSelection";
 
@@ -33,7 +38,7 @@ test("an attempt selection is deterministic and blueprint balanced", () => {
   assert.equal(first.caseStudies.length, CASE_STUDY_COUNT);
   assert.deepEqual(
     first.sectionOrder,
-    [...first.caseStudies.map((caseStudy) => caseStudy.id), "general"],
+    ["general", ...first.caseStudies.map((caseStudy) => caseStudy.id), "decision"],
   );
 
   for (const caseStudy of first.caseStudies) {
@@ -45,6 +50,28 @@ test("an attempt selection is deterministic and blueprint balanced", () => {
   assert.equal(
     first.questions.filter((question) => question.section === "general").length,
     GENERAL_QUESTION_COUNT,
+  );
+  assert.equal(
+    first.questions.filter((question) => question.section === "decision").length,
+    DECISION_QUESTION_COUNT,
+  );
+  assert.equal(
+    first.questions.filter(isInteractiveQuestion).length,
+    INTERACTIVE_QUESTION_COUNT,
+  );
+  for (const [format, target] of Object.entries(formatQuestionTargets)) {
+    assert.equal(
+      first.questions.filter(
+        (question) => getQuestionFormatGroup(question) === format,
+      ).length,
+      target,
+      `${format} should match its per-attempt target`,
+    );
+  }
+  assert.ok(
+    first.questions.slice(-DECISION_QUESTION_COUNT).every(
+      (question) => question.type === "decision",
+    ),
   );
 
   for (const domain of domains) {
@@ -61,8 +88,17 @@ test("different seeds expose broad variety from the complete pool", () => {
   const seenCaseStudyIds = new Set<string>();
   const signatures = new Set<string>();
 
-  for (let seed = 1; seed <= 200; seed += 1) {
+  for (let seed = 1; seed <= 500; seed += 1) {
     const selection = createExamSelection(questions, caseStudies, seed);
+    for (const [format, target] of Object.entries(formatQuestionTargets)) {
+      assert.equal(
+        selection.questions.filter(
+          (question) => getQuestionFormatGroup(question) === format,
+        ).length,
+        target,
+        `seed ${seed} should contain ${target} ${format} questions`,
+      );
+    }
     selection.questions.forEach((question) => seenQuestionIds.add(question.id));
     selection.caseStudies.forEach((caseStudy) => seenCaseStudyIds.add(caseStudy.id));
     signatures.add(selection.questions.map((question) => question.id).join(","));
@@ -70,5 +106,5 @@ test("different seeds expose broad variety from the complete pool", () => {
 
   assert.equal(seenQuestionIds.size, questions.length);
   assert.equal(seenCaseStudyIds.size, caseStudies.length);
-  assert.ok(signatures.size >= 190, "nearly every sampled seed should produce a distinct exam");
+  assert.ok(signatures.size >= 490, "nearly every sampled seed should produce a distinct exam");
 });

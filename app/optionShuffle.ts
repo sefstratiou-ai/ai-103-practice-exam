@@ -1,5 +1,7 @@
 import type { Question } from "./questions";
 
+export type OptionOrder = string[] | Record<string, string[]>;
+
 export function mixSeed(seed: number, value: number) {
   let mixed = (seed ^ Math.imul(value, 0x9e3779b1)) >>> 0;
   mixed = Math.imul(mixed ^ (mixed >>> 16), 0x7feb352d);
@@ -44,7 +46,7 @@ export function createOptionOrderMap(
   allQuestions: readonly Question[],
   attemptSeed: number,
 ) {
-  const orderMap: Record<number, string[]> = {};
+  const orderMap: Record<number, OptionOrder> = {};
   const singleGroups = new Map<number, Extract<Question, { type: "single" }>[]>();
 
   for (const question of allQuestions) {
@@ -86,6 +88,19 @@ export function createOptionOrderMap(
       orderMap[question.id] = shuffleWithSeed(
         question.choices.map((choice) => choice.id),
         mixSeed(attemptSeed, question.id + 20_000),
+      );
+      continue;
+    }
+
+    if (question.type === "code") {
+      orderMap[question.id] = Object.fromEntries(
+        question.blanks.map((blank, blankIndex) => [
+          blank.id,
+          shuffleWithSeed(
+            blank.options.map((option) => option.id),
+            mixSeed(attemptSeed, question.id * 100 + blankIndex + 50_000),
+          ),
+        ]),
       );
     }
   }

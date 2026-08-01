@@ -15,7 +15,7 @@ export const caseStudyIds = [
   "woodgrove",
 ] as const;
 export type CaseStudyId = (typeof caseStudyIds)[number];
-export type SectionId = CaseStudyId | "general";
+export type SectionId = CaseStudyId | "general" | "decision";
 export type Difficulty = "Intermediate" | "Advanced";
 
 type Option = { id: string; text: string };
@@ -66,12 +66,31 @@ export type MatrixQuestion = QuestionBase & {
   correct: Record<string, string>;
 };
 
+export type DecisionQuestion = QuestionBase & {
+  type: "decision";
+  correct: "yes" | "no";
+};
+
+export type CodeQuestion = QuestionBase & {
+  type: "code";
+  language: "python" | "json" | "azurecli" | "http";
+  code: string;
+  blanks: Array<{
+    id: string;
+    label: string;
+    options: Option[];
+  }>;
+  correct: Record<string, string>;
+};
+
 export type Question =
   | SingleQuestion
   | MultiQuestion
   | OrderQuestion
   | MatchQuestion
-  | MatrixQuestion;
+  | MatrixQuestion
+  | DecisionQuestion
+  | CodeQuestion;
 
 export type CaseStudy = {
   id: CaseStudyId;
@@ -81,10 +100,6 @@ export type CaseStudy = {
 };
 
 const sources = {
-  blueprint: {
-    label: "AI-103 study guide",
-    url: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-103",
-  },
   architecture: {
     label: "Microsoft Foundry architecture",
     url: "https://learn.microsoft.com/en-us/azure/foundry/concepts/architecture",
@@ -165,6 +180,10 @@ const sources = {
     label: "Speech to text REST API",
     url: "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-speech-to-text",
   },
+  speechShortAudio: {
+    label: "Speech to text REST API for short audio",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/rest-speech-to-text-short",
+  },
   phraseList: {
     label: "Improve recognition with phrase lists",
     url: "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/improve-accuracy-phrase-list",
@@ -185,6 +204,94 @@ const sources = {
     label: "Document Layout skill for semantic chunking",
     url: "https://learn.microsoft.com/en-us/azure/search/search-how-to-semantic-chunking",
   },
+  promptShields: {
+    label: "Prompt Shields quickstart",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/content-safety/quickstart-jailbreak",
+  },
+  documentToolChoice: {
+    label: "Choose a document-processing Foundry Tool",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/choosing-right-ai-tool",
+  },
+  foundryResource: {
+    label: "Create a Microsoft Foundry resource",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/multi-service-resource",
+  },
+  foundryRbac: {
+    label: "Role-based access control for Microsoft Foundry",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry",
+  },
+  foundryAuth: {
+    label: "Authentication and authorization in Microsoft Foundry",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/concepts/authentication-authorization-foundry",
+  },
+  foundryConnections: {
+    label: "Add a connection to a Foundry project",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/how-to/connections-add",
+  },
+  foundryPrivateLink: {
+    label: "Network isolation for Microsoft Foundry",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/how-to/configure-private-link",
+  },
+  responsesApi: {
+    label: "Build agents with the Responses API",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/agents/quickstarts/responses-api",
+  },
+  pythonErrors: {
+    label: "Handle Azure SDK for Python errors",
+    url: "https://learn.microsoft.com/en-us/azure/developer/python/sdk/fundamentals/errors",
+  },
+  structuredOutputs: {
+    label: "Structured outputs with Azure OpenAI",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/structured-outputs",
+  },
+  storageSas: {
+    label: "Shared access signatures for Azure Storage",
+    url: "https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview",
+  },
+  contentQuickstart: {
+    label: "Content Understanding REST and Python quickstart",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/quickstart/use-rest-api",
+  },
+  documentIntelligenceQuickstart: {
+    label: "Document Intelligence SDK and REST quickstart",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/quickstarts/get-started-sdks-rest-api?view=doc-intel-4.0.0",
+  },
+  documentIntelligenceTraining: {
+    label: "Train a custom neural Document Intelligence model",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/train/custom-neural?view=doc-intel-4.0.0",
+  },
+  searchIndex: {
+    label: "Create an Azure AI Search vector index",
+    url: "https://learn.microsoft.com/en-us/azure/search/vector-search-how-to-create-index",
+  },
+  searchAnalyzers: {
+    label: "Custom analyzers in Azure AI Search",
+    url: "https://learn.microsoft.com/en-us/azure/search/index-add-custom-analyzers",
+  },
+  searchFieldFilters: {
+    label: "Text query filters in Azure AI Search",
+    url: "https://learn.microsoft.com/en-us/azure/search/search-filters",
+  },
+  searchMonitoring: {
+    label: "Monitor Azure AI Search",
+    url: "https://learn.microsoft.com/en-us/azure/search/search-monitor-usage",
+  },
+  translator: {
+    label: "Azure Translator documentation",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/translator/",
+  },
+  languageService: {
+    label: "Azure Language in Foundry Tools",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/language-service/overview",
+  },
+  visionLanguage: {
+    label: "Vision-enabled chat models in Microsoft Foundry",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/gpt-with-vision",
+  },
+  cloudEvaluation: {
+    label: "Cloud evaluation with the Microsoft Foundry SDK",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/how-to/develop/cloud-evaluation",
+  },
 };
 
 export const caseStudies: CaseStudy[] = [
@@ -196,30 +303,36 @@ export const caseStudies: CaseStudy[] = [
       {
         label: "Overview",
         content: [
-          "Northwind Traders is replacing its customer support chatbot with an agent built in Microsoft Foundry. The agent will answer policy questions, look up orders, and request refunds.",
-          "The solution runs in Azure App Service and uses an Azure AI Search index built from policy documents stored in Azure Blob Storage.",
+          "Northwind Traders sells consumer products in eleven European markets. Its current support chatbot answers only scripted questions, loses context when a customer changes topics, and frequently cites policies that have been superseded. Support managers want one agent experience for policy questions, order lookups, and refund requests.",
+          "The replacement will be built in Microsoft Foundry and hosted by an existing Azure App Service application. The application must serve customers and human support representatives through the same backend while preserving a separate conversation for each customer session.",
+          "The first production release is scheduled before the seasonal sales period. Northwind will initially keep human representatives responsible for unusual requests, but it expects the agent to handle routine policy retrieval and order-status work without manual intervention.",
         ],
       },
       {
         label: "Existing environment",
         content: [
-          "The App Service app has a system-assigned managed identity. A Foundry project, an Azure AI Search service, and Application Insights are already connected.",
-          "The policy index contains searchable text, vector fields, document URLs, and policy effective dates. The order and refund systems expose HTTPS APIs.",
+          "The App Service has a system-assigned managed identity. A Foundry resource contains a project for the support team, and the project endpoint and model deployment name are supplied to the application through environment variables. Developers use DefaultAzureCredential locally and in Azure.",
+          "The project has a connection to an Azure AI Search service. Policy files are stored in Azure Blob Storage and ingested by an indexer. Each searchable chunk includes plain text, a vector, the parent document URL, market, product family, policy effective date, and policy expiration date.",
+          "The search service supports keyword, vector, and semantic ranking. Exact order-policy codes must remain searchable as literal values, while conceptual questions such as return eligibility should use hybrid retrieval. A nightly ingestion job adds newly approved documents and removes expired content from customer-facing results.",
+          "Order lookup and refund operations are exposed through HTTPS APIs described by an OpenAPI document. Each operation has a unique operationId. The refund API accepts an idempotency key so that retrying a timed-out tool call does not create a second refund.",
         ],
       },
       {
         label: "Requirements",
         content: [
-          "Policy answers must be grounded in current documents and include citations. Multi-turn conversations must preserve context.",
-          "Refund requests above EUR 500 require supervisor approval before the refund API is called. All model calls, retrievals, tool calls, and approval decisions must be traceable.",
-          "Application code must not store service keys or connection secrets.",
+          "Every policy answer must be grounded in current indexed evidence and include a link to the supporting policy. Retrieval must filter out documents that are not valid for the customer's market or that have expired. If evidence is absent or contradictory, the agent must say so and offer escalation.",
+          "A customer can ask a follow-up question without repeating the order number or market. Conversation state must therefore preserve the relevant context, but it must not leak information between customers or allow old tool results to silently override newer policy evidence.",
+          "User prompts and retrieved policy text must be checked for prompt attacks. Instructions embedded in uploaded or retrieved documents must be treated as untrusted data. A detected document attack should prevent that content from being sent to the model as grounding evidence.",
+          "Refunds of EUR 500 or less can proceed after the customer confirms the amount. Refunds above EUR 500 require a supervisor approval event before the refund API is invoked. A model recommendation alone never counts as approval, and a rejected request must not call the API.",
+          "All retrievals, model responses, tool arguments, tool results, approval decisions, and correlation identifiers must be traceable in Application Insights. Production code must not contain API keys, connection strings, or other long-lived secrets.",
         ],
       },
       {
         label: "Constraints",
         content: [
-          "Traffic is bursty during sales events. The company wants pay-per-use inference initially and must keep data processing within the EU data zone.",
-          "Support agents should see a clear escalation when retrieved evidence is insufficient.",
+          "Traffic is usually modest but can increase rapidly during sales events. Northwind wants a pay-per-use model deployment for the initial release and will reassess provisioned capacity after it has several months of latency and token-usage measurements.",
+          "Model inference must remain within the EU data zone. Existing search and storage resources are in approved European regions. The operations team can implement retries for transient throttling, but it cannot move customer data to another geography to obtain extra capacity.",
+          "The support engineering team can assign narrowly scoped data-plane roles, but it wants to avoid custom credential rotation or unnecessary administrator intervention. Any access design must use the App Service identity and the smallest practical resource or project scope.",
         ],
       },
     ],
@@ -232,29 +345,36 @@ export const caseStudies: CaseStudy[] = [
       {
         label: "Overview",
         content: [
-          "Alpine Ski House owns a media library containing product images, marketing videos, PDF storyboards, and audio narration. Editors need one search experience across all content types.",
-          "A new assistant will generate accessible descriptions, answer questions about visual evidence, and extract structured campaign metadata.",
+          "Alpine Ski House owns a rapidly growing media library used by product, accessibility, legal, and localization teams. The library contains approved product photography, draft artwork, marketing videos, audio narration, and PDF storyboards from internal and external contributors.",
+          "Editors currently search separate file shares by filename and often cannot locate an asset when they remember only its subject or campaign. Alpine wants one search experience that supports exact identifiers, natural-language discovery, and evidence-grounded answers about visual content.",
+          "A new assistant will generate accessible descriptions, answer questions about visible evidence, and extract a consistent campaign record from every supported media type. Human editors remain responsible for approving generated descriptions and any edited asset before publication.",
         ],
       },
       {
         label: "Data",
         content: [
-          "PDF files contain paragraphs, tables, handwritten annotations, and scanned pages. Images can contain product labels and text supplied by external partners.",
-          "Videos contain scene changes, spoken narration, and on-screen text. The library contains exact product codes that users frequently search for.",
+          "PDF storyboards contain headings, paragraphs, tables, scanned pages, handwritten annotations, diagrams, and embedded product images. Some files use different layouts for each campaign, so a fixed template cannot reliably locate all required fields.",
+          "Product photographs can contain labels, packaging text, logos, people, and handwritten notes from reviewers. Partner-supplied images are untrusted and can contain small or low-contrast instructions that should never change the assistant's system behavior.",
+          "Videos contain shot changes, spoken narration, music, on-screen disclosures, and product demonstrations. Reviewers need time-aligned segments so that extracted speech, visible text, objects, dominant visual characteristics, and scene descriptions can be traced to the relevant interval.",
+          "Every approved product has an exact alphanumeric code, such as ASH-BOOT-410, that users frequently enter verbatim. The same asset can also be discovered through conceptual requests such as 'a red touring boot photographed in snow at dusk.'",
         ],
       },
       {
         label: "Requirements",
         content: [
-          "Search must support exact product-code matches and conceptual similarity. Results should be reranked for semantic relevance.",
-          "The assistant must produce JSON metadata and Markdown representations suitable for downstream RAG. Generated alt text must reflect visual evidence.",
-          "Text embedded in partner images must never override system instructions. Unsafe visual content must be classified before publication.",
+          "Azure AI Search must support literal product-code matches, full-text queries, metadata filtering, and vector similarity. Hybrid results should be semantically reranked, and the product code field must not be processed in a way that breaks exact matching.",
+          "A reusable Content Understanding analyzer must process PDFs, images, audio, and video. It must return structured JSON matching Alpine's campaign schema and a Markdown representation that preserves useful headings, tables, and document structure for downstream RAG.",
+          "Generated alt text must describe only visual evidence and distinguish observed details from uncertain interpretation. When an image is incomplete or illegible, the assistant must request another asset or flag the description for review rather than inventing missing product features.",
+          "Designers sometimes replace a background while preserving a product. Image-edit requests must use the approved source image and, when only a bounded region may change, a mask that identifies the editable region. Unmasked product details should remain recognizable.",
+          "Unsafe visual content must be classified before publication. Text embedded in partner images must be treated as data, and a detected indirect prompt attack must not be allowed to override system instructions or trigger an automated publishing action.",
         ],
       },
       {
         label: "Security",
         content: [
-          "All Azure service traffic must remain on private network paths. Workloads use managed identities, and public network access is disabled where supported.",
+          "All Azure service traffic must remain on approved private network paths. Public network access is disabled where supported, and name resolution must route Foundry, Search, Storage, and Content Understanding endpoints through the corresponding private endpoints.",
+          "Application workloads use managed identities and Microsoft Entra ID. Keys may be used only during isolated developer experiments and must never be committed to source control or embedded in production configuration.",
+          "Editors can review and approve assets but cannot modify network settings or assign roles. Platform administrators want project-scoped permissions and shared connections configured with the least administrative effort that still keeps production resources isolated. Before promotion, a representative validation set must cover low-resolution photographs, scanned storyboards, exact product codes, multilingual narration, masked edits, and attempted document attacks. Results must record retrieval relevance, schema accuracy, visual grounding, safety outcomes, latency, and reviewer overrides so that regressions can be attributed to a specific analyzer, index, prompt, or model version. Failed samples remain in a regression suite for the next release.",
         ],
       },
     ],
@@ -267,29 +387,36 @@ export const caseStudies: CaseStudy[] = [
       {
         label: "Overview",
         content: [
-          "Fabrikam Insurance receives claim forms, repair estimates, photographs, and recorded customer calls. A new claims assistant will assemble an evidence package and recommend the next review step.",
-          "The solution uses a Microsoft Foundry project, Azure AI Search, Azure Content Understanding, Azure Speech, and an internal claims API.",
+          "Fabrikam Insurance receives automobile claims through brokers, mobile applications, email, and call centers. A single claim can include standardized claim forms, repair estimates, photographs, police reports, medical notes, and recorded conversations.",
+          "Adjusters currently copy information between systems and manually compare documents for conflicting dates, amounts, and policy identifiers. Fabrikam wants a claims assistant that assembles an evidence package, highlights discrepancies, and recommends the next review step without making a payment decision.",
+          "The planned solution uses a Microsoft Foundry project, Azure AI Search, Azure Content Understanding, Document Intelligence, Azure Speech, and an internal claims API. The rollout begins with automobile claims and may later include property claims with substantially different document layouts.",
         ],
       },
       {
         label: "Data",
         content: [
-          "Claim forms can be scanned or handwritten. Repair estimates contain tables, line items, signatures, and policy identifiers. Photos can include text supplied by repair shops.",
-          "Call recordings arrive in Azure Blob Storage overnight. Reviewers need timestamps, speaker labels, and links from extracted fields back to supporting pages or media segments.",
+          "The primary claim form has a stable layout and an existing Document Intelligence prebuilt or custom model can extract its standard fields efficiently. Other submissions, including medical narratives and broker correspondence, are highly variable and can require inferred fields described in natural language.",
+          "Repair estimates contain tables, line items, signatures, selection marks, handwritten additions, and policy identifiers. Scans vary in quality. Reviewers need both structured fields and layout-aware text so they can confirm how an extracted value relates to its surrounding document content.",
+          "Claim photographs can contain license plates, damage indicators, shop labels, and untrusted text. The solution must associate visual findings with the source image and must not obey instructions embedded in photographed signs, notes, or uploaded screenshots.",
+          "Recorded calls arrive in Azure Blob Storage overnight. Some files exceed the duration suitable for a real-time request. Reviewers require timestamps, speaker labels, transcription status, and links from extracted evidence back to the supporting page, image, or media segment.",
         ],
       },
       {
         label: "Requirements",
         content: [
-          "The extraction output must use a stable JSON schema and include confidence and source-location details. Low-confidence or conflicting evidence must be routed to a human reviewer.",
-          "The assistant can draft a recommendation, but payments above EUR 20,000 require explicit adjuster approval. Retried requests must never create a duplicate payment.",
-          "Historical calls should be transcribed asynchronously in bulk. Claim photos must be screened for unsafe content and for instructions embedded in image text.",
+          "The extraction output must conform to a stable JSON schema and include confidence or grounding information plus source locations. Fields include claimant identity, incident date, policy number, estimated loss, currency, repair lines, injuries, and a collection of detected inconsistencies.",
+          "Fabrikam should use the document-processing tool that best matches each workload. Standardized forms favor supported prebuilt or trained Document Intelligence models, while varied unstructured or multimodal evidence should use Content Understanding analyzers and their schema-based outputs.",
+          "Low-confidence fields, missing required evidence, and conflicts between documents must route the claim to a human reviewer. The assistant can explain the conflict and draft a recommendation, but it cannot silently choose one source as authoritative when policy requires review.",
+          "Payments above EUR 20,000 require explicit adjuster approval before the payment tool is called. Every payment request includes a claim identifier and idempotency key. Retrying after a network timeout must return the original result or safely resume instead of issuing a duplicate payment.",
+          "Historical calls must be transcribed asynchronously in bulk. Claim photos must be screened for unsafe content and indirect prompt injection. All indexed evidence must retain the tenant, claim, document, page, and media-segment identifiers required for filtering and citation.",
         ],
       },
       {
         label: "Security",
         content: [
-          "All services use private endpoints where supported. Production workloads use managed identities and narrowly scoped data-plane roles. Every retrieval, model response, tool call, and approval is retained for audit.",
+          "All services use private endpoints where supported, and public access is disabled for production resources. Production applications use managed identities and narrowly scoped data-plane roles; API keys are not stored in application settings.",
+          "Claims are partitioned by business unit and jurisdiction. Search queries must apply the authorization filter before vector scoring so that evidence from another tenant or jurisdiction cannot enter the candidate set.",
+          "Every extraction request, retrieval, model response, tool argument, payment result, confidence-based routing decision, and human approval is retained for audit with a shared correlation identifier. Sensitive document contents must not be written to diagnostic logs unnecessarily. The release gate uses a labeled evaluation set containing clean forms, noisy scans, unusual narratives, contradictory evidence, and long recordings. Fabrikam measures field accuracy, confidence calibration, citation correctness, tenant isolation, transcription completion, and duplicate-payment prevention. A new analyzer or model version cannot advance when it improves average extraction but materially worsens a protected claim category or removes reviewer-verifiable grounding.",
         ],
       },
     ],
@@ -302,29 +429,36 @@ export const caseStudies: CaseStudy[] = [
       {
         label: "Overview",
         content: [
-          "Contoso technicians service industrial equipment across Europe. A voice-enabled agent will answer questions from manuals, interpret equipment photos, and create work orders through an existing REST API.",
-          "The agent is hosted in Microsoft Foundry and retrieves approved manuals from Azure AI Search.",
+          "Contoso technicians service industrial pumps, compressors, and control systems across Europe. They often work in noisy locations with limited access to a laptop and need a voice-enabled assistant that can retrieve manuals, interpret equipment photographs, and prepare work orders.",
+          "The assistant is hosted in Microsoft Foundry and is accessed from a mobile application. It retrieves approved manuals from Azure AI Search and uses an internal REST API to create or update work orders after the technician confirms the proposed action.",
+          "The initial release covers four equipment families and four spoken languages. Contoso expects the knowledge base and model deployments to be reused by additional regional projects, while project data and technician conversations remain isolated.",
         ],
       },
       {
         label: "Search and tools",
         content: [
-          "Manuals contain exact error codes, diagrams, revision dates, and equipment-family metadata. Search results must favor the latest manual for the technician's equipment family while still supporting conceptual questions.",
-          "The work-order API publishes an OpenAPI 3.1 document. Each operation has a unique operationId and supports Microsoft Entra authentication.",
+          "Manuals contain exact error codes, diagrams, part identifiers, revision dates, and equipment-family metadata. Some codes contain punctuation that must remain intact for exact lookup, while conceptual questions require lexical and vector retrieval over explanatory text.",
+          "The search index stores human-readable chunks and corresponding vectors. Equipment family, revision status, language, and effective date are filterable. Search results must exclude obsolete manuals and favor the latest approved revision for the technician's selected equipment.",
+          "The work-order API publishes an OpenAPI 3.1 document. Each operation has a unique operationId, a bounded JSON schema, and Microsoft Entra authentication. Create and reschedule operations can change production systems and therefore require confirmation.",
+          "The Foundry project uses connections for Search and the work-order API. Connections should be centrally manageable where reuse is required, but developers should receive access only to the project and resources needed for their regional workload.",
         ],
       },
       {
         label: "Interaction",
         content: [
-          "Technicians speak English, French, German, and Italian. They need interim transcripts and translated text during a live conversation.",
-          "When a technician uploads a control-panel photo, answers must be based only on visible indicators and labels. If evidence is insufficient, the agent must ask for another photo instead of guessing.",
+          "Technicians speak English, French, German, and Italian. They need interim transcripts during live conversations and translated text when a manual is available only in another supported language. The application must preserve technical codes without translating them.",
+          "The mobile client sends audio continuously and displays partial recognition results before the final utterance. Historical recordings are not part of the interactive path and can use a separate asynchronous transcription workflow when required.",
+          "When a technician uploads a control-panel photograph, the answer must be based only on visible indicators, labels, and grounded manual evidence. If the image is blurred or omits a required component, the assistant must ask for another photograph instead of guessing.",
+          "The agent keeps conversation state for the active maintenance session. Tool outputs and retrieved evidence are associated with that session, and a new technician or work order must not inherit the previous session's private context.",
+          "Before a state-changing tool call, the application presents the equipment identifier, proposed operation, and arguments for confirmation. Read-only diagnostic lookups do not require the same approval step but still appear in the trace.",
         ],
       },
       {
         label: "Operations",
         content: [
-          "Inference must remain in the EU data zone. Workload volume is steady and latency must be predictable during weekday shifts.",
-          "The operations team needs traces that separate retrieval, generation, and work-order tool latency. Tool calls that change maintenance schedules require user confirmation.",
+          "Inference must remain in the EU data zone. Workload volume is steady during weekday shifts, and interactive latency must be predictable. Contoso is willing to reserve capacity if that is more appropriate than relying on variable shared throughput.",
+          "The operations team needs traces that separate speech recognition, retrieval, generation, and work-order tool latency. It also monitors token usage, failed tool calls, throttling, retrieval relevance, and the proportion of sessions escalated for insufficient evidence.",
+          "The production application uses managed identity and keyless credentials. A valid token with insufficient scope should be diagnosed as an authorization problem, while throttling should use bounded retries with exponential backoff rather than immediate repeated requests. Support runbooks distinguish malformed endpoints, unknown deployment names, expired or wrongly scoped tokens, network name-resolution failures, invalid tool payloads, and service throttling. Every retry preserves the correlation and idempotency identifiers. A canary evaluation set covers noisy speech, punctuation-heavy error codes, blurred photographs, obsolete manuals, and rejected work-order confirmations before a regional project receives a new workflow version.",
         ],
       },
     ],
@@ -337,29 +471,36 @@ export const caseStudies: CaseStudy[] = [
       {
         label: "Overview",
         content: [
-          "Woodgrove Bank's creative team generates localized campaign images, short video concepts, captions, and compliance summaries. A Foundry application coordinates specialist agents for copy, visual creation, and review.",
-          "Approved product photography and brand standards are stored in Azure Blob Storage and indexed in Azure AI Search.",
+          "Woodgrove Bank's creative studio produces localized campaigns for retail banking products. Teams generate images, short video concepts, captions, disclosures, and compliance summaries, then adapt the approved material for several channels and aspect ratios.",
+          "A Microsoft Foundry application coordinates specialist agents for copy, visual creation, retrieval, and compliance review. Approved product photography, legal wording, and brand standards are stored in Azure Blob Storage and indexed in Azure AI Search.",
+          "The bank wants faster iteration without allowing a generative workflow to publish directly. Designers remain responsible for creative approval, and compliance reviewers must approve high-impact assets before they enter the publishing system.",
         ],
       },
       {
         label: "Creative workflow",
         content: [
-          "Designers provide a product image and request a new background while preserving recognizable product details. Some assets require a transparent background for downstream layout tools.",
-          "Video files must be segmented so reviewers can locate spoken disclosures, on-screen text, and scene-level campaign metadata.",
+          "Designers commonly provide an approved product image and request a new seasonal background while preserving the product, logo, and printed disclosure. Some edits affect only a bounded area and therefore include a same-sized mask identifying the region that may change.",
+          "Other assets require a transparent background for downstream layout tools. The team must select a supported image model, output format, and background option rather than assuming every model and format supports transparency or URL-based output.",
+          "Image requests use the deployment name configured in the Foundry resource. Responses from current GPT-image models contain base64 image data. A misspelled deployment, invalid credential, rate limit, or content-policy violation must produce a distinct remediation path.",
+          "Video files are segmented so reviewers can locate spoken disclosures, on-screen text, products, dominant visual characteristics, and scene-level campaign metadata. Extracted claims must retain the time span and source asset needed for reviewer verification.",
         ],
       },
       {
         label: "Governance",
         content: [
-          "Generated assets must be checked for harmful content, prohibited symbols, missing disclosures, and brand-policy violations. High-impact publication actions require human approval.",
-          "Every generated asset must retain its prompt, source-asset identifiers, model deployment, safety results, and reviewer decision as provenance metadata.",
+          "Generated assets must be checked for harmful content, prohibited symbols, missing disclosures, and brand-policy violations. Retrieved documents and uploaded assets are untrusted inputs and must not be able to inject instructions into the compliance agent.",
+          "A Prompt Shields document result that reports an attack causes the affected grounding material to be excluded and the event to be recorded. Passing Prompt Shields does not replace normal content moderation, brand evaluation, or human review.",
+          "Every generated asset retains its prompt, source-asset identifiers, model deployment, generation parameters, safety results, evaluator results, and reviewer decision as provenance metadata. The audit record must link a published asset to the exact workflow version that produced it.",
+          "High-impact publication actions require human approval. Agent tools expose narrow schemas, and publication credentials are available only to the controlled publishing component rather than to every creative or retrieval agent.",
+          "When a request is retried after a transient failure, workflow identifiers prevent duplicate publication jobs. A model's self-critique may help identify a weak draft, but it cannot approve its own asset or bypass a failed policy check.",
         ],
       },
       {
         label: "Optimization",
         content: [
-          "Most caption and classification tasks are simple and cost sensitive; difficult visual reasoning should use a more capable multimodal model.",
-          "The team evaluates groundedness, brand adherence, safety, latency, and token usage before promoting a workflow version.",
+          "Most caption, classification, and routing tasks are simple and cost sensitive. Difficult visual reasoning and final compliance analysis can use a more capable multimodal model. Routing rules must be measured rather than assuming the largest model is required for every step.",
+          "The team evaluates groundedness, brand adherence, visual fidelity, safety, latency, and token usage on a representative dataset before promoting a workflow version. Failed cases are retained for regression testing after prompt, model, or tool changes.",
+          "Campaign demand is bursty, so initial deployments use pay-per-use capacity with quota monitoring and bounded retries. The team will consider provisioned capacity only for workloads whose sustained volume and latency requirements justify the reserved throughput. Release tests include masked and unmasked edits, transparent outputs, multilingual disclosures, visually ambiguous scenes, blocked prompts, misspelled deployments, expired credentials, and forced throttling. Reviewers compare source preservation, disclosure placement, base64 decoding, safety classifications, grounding, and provenance completeness. The publishing component remains disabled in preproduction so an evaluation defect can never become a live campaign action. Only an approved, versioned workflow can cross that boundary after both designer and compliance approval.",
         ],
       },
     ],
@@ -476,7 +617,7 @@ export const questions: Question[] = [
     ],
     correct: "b",
     explanation: "A multimodal model can interpret the visual context. Clear accessibility and evidence constraints help produce concise descriptions without inventing details; OCR alone captures only text.",
-    source: sources.blueprint,
+    source: sources.visionLanguage,
   },
   {
     id: 7,
@@ -697,7 +838,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c"],
     selectCount: 3,
     explanation: "Model identity, tool execution details, and retrieval provenance explain what inputs and operations produced an outcome. UI details do not reproduce the agent decision path.",
-    source: sources.blueprint,
+    source: sources.tracing,
   },
   {
     id: 18,
@@ -717,7 +858,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c", "d"],
     selectCount: 4,
     explanation: "A production view needs quality, retrieval, safety, and operational signals. Together they separate model problems from poor evidence, safety incidents, and capacity or latency issues.",
-    source: sources.blueprint,
+    source: sources.cloudEvaluation,
   },
   {
     id: 19,
@@ -735,7 +876,7 @@ export const questions: Question[] = [
     ],
     correct: "b",
     explanation: "Versioned configuration, repeatable deployment, evaluation gates, and controlled promotion make changes testable and reversible before they affect production users.",
-    source: sources.blueprint,
+    source: sources.cloudEvaluation,
   },
   {
     id: 20,
@@ -850,7 +991,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "Low randomness and schema-constrained output support deterministic extraction. The application should also validate the returned structure.",
-    source: sources.blueprint,
+    source: sources.structuredOutputs,
   },
   {
     id: 26,
@@ -871,7 +1012,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c"],
     selectCount: 3,
     explanation: "Groundedness targets unsupported claims, relevance targets alignment with the question, and safety evaluators target harmful content or behavior.",
-    source: sources.blueprint,
+    source: sources.evaluators,
   },
   {
     id: 27,
@@ -925,7 +1066,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "A bounded draft-critique-revise loop can improve output while controlling cost and runaway behavior. Use explicit evaluation criteria and a deterministic stopping rule.",
-    source: sources.blueprint,
+    source: sources.workflow,
   },
   {
     id: 30,
@@ -983,7 +1124,7 @@ export const questions: Question[] = [
     ],
     correct: { r1: "yes", r2: "yes", r3: "no", r4: "yes" },
     explanation: "Approval boundaries, untrusted-output handling, server-side validation, and least privilege reduce agent risk. Broad Owner access violates least privilege.",
-    source: sources.blueprint,
+    source: sources.foundryRbac,
   },
   {
     id: 33,
@@ -1003,7 +1144,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c"],
     selectCount: 3,
     explanation: "Right-sizing models, reducing unnecessary tokens, and measuring usage lower cost while preserving behavior. Duplicating calls and maximum outputs increase spend.",
-    source: sources.blueprint,
+    source: sources.models,
   },
   {
     id: 34,
@@ -1021,7 +1162,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "Structured output with a declared schema is more reliable than parsing prose. Application validation remains necessary before the object is trusted downstream.",
-    source: sources.blueprint,
+    source: sources.structuredOutputs,
   },
   {
     id: 35,
@@ -1039,7 +1180,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "Inpainting uses a source image plus a mask to identify the region that may change, guided by the prompt. Unmasked content is intended to remain stable.",
-    source: sources.blueprint,
+    source: sources.imageGeneration,
   },
   {
     id: 36,
@@ -1079,7 +1220,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "A multimodal model can reason over the image and question together. Requiring visible evidence reduces unsupported conclusions.",
-    source: sources.blueprint,
+    source: sources.visionLanguage,
   },
   {
     id: 38,
@@ -1175,7 +1316,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "Azure Translator is the direct prebuilt service for text translation. Speech translation is appropriate when the input is audio or a live spoken stream.",
-    source: sources.blueprint,
+    source: sources.translator,
   },
   {
     id: 43,
@@ -1195,7 +1336,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c"],
     selectCount: 3,
     explanation: "Generative prompting and Foundry Tools can extract entities and topics, summarize, and create structured outputs. Infrastructure capacity and physical image properties are not text-analysis results.",
-    source: sources.blueprint,
+    source: sources.languageService,
   },
   {
     id: 44,
@@ -1213,7 +1354,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "Grounding, domain instructions, examples, and a schema target the required format. An evaluation set tests whether summaries and citations meet compliance needs.",
-    source: sources.blueprint,
+    source: sources.structuredOutputs,
   },
   {
     id: 45,
@@ -1333,7 +1474,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c"],
     selectCount: 3,
     explanation: "Least-privilege tools, explicit approvals, and deterministic enforcement outside the model constrain impact. Model confidence is not an authorization control.",
-    source: sources.blueprint,
+    source: sources.workflow,
   },
   {
     id: 51,
@@ -1353,7 +1494,7 @@ export const questions: Question[] = [
     correct: ["b", "c", "d"],
     selectCount: 3,
     explanation: "Managed identity and least-privilege RBAC remove stored credentials, private connectivity limits network exposure, and correlated traces provide the required audit trail. Embedded keys and broad Owner access violate least privilege.",
-    source: sources.blueprint,
+    source: sources.foundryAuth,
   },
   {
     id: 52,
@@ -1371,7 +1512,7 @@ export const questions: Question[] = [
     ],
     correct: "c",
     explanation: "The workflow must enforce approval outside the model and make the side effect idempotent. A stable idempotency key lets the payment service recognize retries without issuing a second payment.",
-    source: sources.blueprint,
+    source: sources.workflow,
   },
   {
     id: 53,
@@ -1486,7 +1627,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "A multimodal model can reason over the supplied image. Instructions should constrain the response to visible evidence and define an uncertainty path so the agent asks for better evidence rather than fabricating a state.",
-    source: sources.blueprint,
+    source: sources.visionLanguage,
   },
   {
     id: 59,
@@ -1605,7 +1746,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c"],
     selectCount: 3,
     explanation: "A language-model text-analysis flow can classify tone, extract entities or references, translate or summarize, and return structured JSON. It cannot measure video properties or replace required legal approval.",
-    source: sources.blueprint,
+    source: sources.languageService,
   },
   {
     id: 65,
@@ -1749,7 +1890,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c", "d"],
     selectCount: 4,
     explanation: "Versioned artifacts, automated evaluations, staged exposure, and rollback create a controlled release process. Unrecorded notebook changes and disabled telemetry remove reproducibility and early warning signals.",
-    source: sources.blueprint,
+    source: sources.cloudEvaluation,
   },
   {
     id: 72,
@@ -1788,7 +1929,7 @@ export const questions: Question[] = [
     correct: ["a", "b", "c", "d"],
     selectCount: 4,
     explanation: "Pipeline operations require ingestion failures, freshness, vectorization health, and measured retrieval quality. Portal appearance and deployment count do not show whether indexed evidence is current or relevant.",
-    source: sources.blueprint,
+    source: sources.searchMonitoring,
   },
   {
     id: 74,
@@ -1863,7 +2004,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "An idempotency key identifies one intended side effect across retries. The backend can record the completed operation and safely return the same label instead of creating another one after an ambiguous timeout.",
-    source: sources.blueprint,
+    source: sources.openApiTools,
   },
   {
     id: 78,
@@ -1943,7 +2084,7 @@ export const questions: Question[] = [
     ],
     correct: "a",
     explanation: "Schema-constrained structured output gives the model an explicit contract, while application validation and failure handling protect the downstream API. Prompt wording alone does not guarantee valid structure.",
-    source: sources.blueprint,
+    source: sources.structuredOutputs,
   },
   {
     id: 82,
@@ -2220,6 +2361,890 @@ export const questions: Question[] = [
     explanation: "The indexer first reads source content, the Document Layout skill extracts structure and chunks it, embeddings are generated for those chunks, and index projections map the enriched child documents into the search index.",
     source: sources.semanticChunking,
   },
+  {
+    id: 96,
+    section: "decision",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Implement keyless authentication with least-privilege roles",
+    difficulty: "Intermediate",
+    type: "decision",
+    context: "A claims application runs in Azure App Service and calls a model deployed in a Microsoft Foundry resource. The App Service has a system-assigned managed identity. Security policy prohibits API keys in application settings, source code, and deployment pipelines.",
+    stem: "The team assigns the managed identity the Foundry User role at the Foundry resource scope and configures the application to authenticate by using DefaultAzureCredential. Does this solution meet the requirement?",
+    correct: "yes",
+    explanation: "DefaultAzureCredential can use the App Service managed identity, while the resource-scoped Foundry User role grants the required Foundry data-plane access without storing an API key.",
+    source: sources.foundryAuth,
+  },
+  {
+    id: 97,
+    section: "decision",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Detect indirect prompt attacks in grounding documents",
+    difficulty: "Advanced",
+    type: "decision",
+    context: "A support agent retrieves public documents and includes their contents in a grounded model request. An attacker might place hidden instructions in a document to make the agent ignore policy or invoke a tool with unauthorized arguments.",
+    stem: "The team sends both the user prompt and retrieved document text to Azure AI Content Safety Prompt Shields and blocks the request when a document attack is detected. Does this solution help meet the requirement?",
+    correct: "yes",
+    explanation: "Prompt Shields analyzes user prompts and documents. Its document-attack detection is designed to identify indirect prompt injection embedded in third-party grounding content.",
+    source: sources.promptShields,
+  },
+  {
+    id: 98,
+    section: "decision",
+    domain: "Implement information extraction solutions",
+    objective: "Choose between Document Intelligence and Content Understanding",
+    difficulty: "Advanced",
+    type: "decision",
+    context: "An application processes highly varied, unstructured technical reports that contain narrative text, tables, diagrams, and charts. It must infer fields described in natural language and produce structured JSON plus rich Markdown for downstream reasoning without first labeling training samples.",
+    stem: "The team uses only a Document Intelligence prebuilt model intended for standardized forms and does not configure a Content Understanding analyzer. Does this solution meet the requirement?",
+    correct: "no",
+    explanation: "Content Understanding analyzers are the better fit for varied, unstructured, multimodal documents, inferred fields, zero-shot schemas, and rich downstream representations. Document Intelligence prebuilts are strongest for supported structured document types.",
+    source: sources.documentToolChoice,
+  },
+  {
+    id: 99,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Create a Microsoft Foundry resource with Azure CLI",
+    difficulty: "Intermediate",
+    type: "code",
+    language: "azurecli",
+    stem: "Complete the Azure CLI command to create a Microsoft Foundry resource on the standard pricing tier.",
+    code: `az cognitiveservices account create \\
+  --name contoso-foundry \\
+  --resource-group rg-ai \\
+  --location westeurope \\
+  --kind {{kind}} \\
+  --sku {{sku}} \\
+  --yes`,
+    blanks: [
+      {
+        id: "kind",
+        label: "Resource kind",
+        options: [
+          { id: "ai_services", text: "AIServices" },
+          { id: "open_ai", text: "OpenAI" },
+          { id: "text_analytics", text: "TextAnalytics" },
+        ],
+      },
+      {
+        id: "sku",
+        label: "Pricing tier",
+        options: [
+          { id: "s0", text: "S0" },
+          { id: "f0", text: "F0" },
+          { id: "p1", text: "P1" },
+        ],
+      },
+    ],
+    correct: { kind: "ai_services", sku: "s0" },
+    explanation: "Microsoft documents AIServices as the required resource kind for a Foundry resource and S0 as the standard SKU in the Azure CLI creation example. The command creates the billable resource in the chosen resource group and region.",
+    source: sources.foundryResource,
+  },
+  {
+    id: 100,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Select the correct Azure resource boundary",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A team needs one Azure resource boundary for Foundry projects, models, agents, evaluations, and Foundry Tools such as Speech, Vision, Language, and Content Understanding. What should it create?",
+    options: [
+      { id: "a", text: "A Microsoft Foundry resource with kind AIServices" },
+      { id: "b", text: "A standalone Storage account only" },
+      { id: "c", text: "An Azure AI Search index without a Foundry resource" },
+      { id: "d", text: "A local Python virtual environment" },
+    ],
+    correct: "a",
+    explanation: "A Microsoft Foundry resource is the unified Azure resource boundary for projects and supported AI capabilities. Storage and Search can be connected resources, but neither replaces the Foundry resource or its project and governance boundary.",
+    source: sources.foundryResource,
+  },
+  {
+    id: 101,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Assign least-privilege Foundry project access by CLI",
+    difficulty: "Advanced",
+    type: "code",
+    language: "azurecli",
+    stem: "Complete the role assignment for a developer who must build and test agents in only the support project. The variables projectScope and principalId are already defined.",
+    code: `az role assignment create \\
+  --assignee "$principalId" \\
+  --role "{{role_id}}" \\
+  --scope "{{scope}}"`,
+    blanks: [
+      {
+        id: "role_id",
+        label: "Role definition ID",
+        options: [
+          { id: "foundry_user", text: "53ca6127-db72-4b80-b1b0-d745d6d5456d" },
+          { id: "agent_consumer", text: "eed3b665-ab3a-47b6-8f48-c9382fb1dad6" },
+          { id: "foundry_owner", text: "c883944f-8b7b-4483-af10-35834be79c4a" },
+        ],
+      },
+      {
+        id: "scope",
+        label: "Assignment scope",
+        options: [
+          { id: "project", text: "$projectScope" },
+          { id: "subscription", text: "$subscriptionScope" },
+          { id: "resource_group", text: "$resourceGroupScope" },
+        ],
+      },
+    ],
+    correct: { role_id: "foundry_user", scope: "project" },
+    explanation: "Foundry User is the least-privilege built-in role for developers who build and test within a project. Assigning its stable role definition ID at the project scope avoids granting access to unrelated projects or broader Azure resources.",
+    source: sources.foundryRbac,
+  },
+  {
+    id: 102,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Grant least-privilege access to one agent endpoint",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "A service principal must invoke one Foundry agent endpoint but must not build agents or invoke every agent in the project. Which assignment is the least privileged?",
+    options: [
+      { id: "a", text: "Foundry Agent Consumer at the individual agent scope" },
+      { id: "b", text: "Foundry Owner at the subscription scope" },
+      { id: "c", text: "Contributor at the resource-group scope" },
+      { id: "d", text: "Reader at the project scope" },
+    ],
+    correct: "a",
+    explanation: "Foundry Agent Consumer grants endpoint interaction without development permissions. Assigning it at the individual agent scope further limits the principal to that agent; Reader and Contributor do not provide the required data-plane interaction permission.",
+    source: sources.foundryRbac,
+  },
+  {
+    id: 103,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Diagnose Foundry authentication and authorization errors",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A Python application successfully obtains a Microsoft Entra token for https://ai.azure.com/.default, but a Foundry request returns HTTP 403. What should the team check first?",
+    options: [
+      { id: "a", text: "Whether the calling principal has the required RBAC role at the resource or project scope" },
+      { id: "b", text: "Whether the token string should be replaced by a Storage SAS" },
+      { id: "c", text: "Whether the model temperature is too low" },
+      { id: "d", text: "Whether the response JSON contains too many fields" },
+    ],
+    correct: "a",
+    explanation: "A valid token proves authentication, while HTTP 403 commonly indicates that authorization is missing. The principal needs the appropriate Foundry data-plane role at a scope that contains the requested project or resource operation.",
+    source: sources.foundryAuth,
+  },
+  {
+    id: 104,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Scope reusable Foundry connections appropriately",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Several projects in the same Foundry resource must reuse an approved Azure AI Search connection. Project teams must not gain permission to administer unrelated resources. Which design is best?",
+    options: [
+      { id: "a", text: "Create the reusable connection at the Foundry resource boundary and grant each project team only its required project and target-resource data access" },
+      { id: "b", text: "Give every developer the Search administrator key and subscription Owner" },
+      { id: "c", text: "Copy a Search key into every project's source repository" },
+      { id: "d", text: "Create one Azure subscription for every individual developer" },
+    ],
+    correct: "a",
+    explanation: "Foundry supports account/resource and project connections. A centrally managed reusable connection can be shared where intended, while project and target-service RBAC remain narrowly scoped. Keys in repositories and broad Owner access defeat least privilege.",
+    source: sources.foundryConnections,
+  },
+  {
+    id: 105,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Delegate temporary Blob access without account keys",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "A signed URL must give one reviewer read access to a claim image for 15 minutes. Policy prohibits signing with a Storage account key. What should the application issue?",
+    options: [
+      { id: "a", text: "A user delegation SAS authorized with Microsoft Entra credentials" },
+      { id: "b", text: "The Storage account key in a query parameter" },
+      { id: "c", text: "A perpetual account SAS with every service permission" },
+      { id: "d", text: "A Foundry model deployment name" },
+    ],
+    correct: "a",
+    explanation: "A user delegation SAS is secured with Microsoft Entra credentials instead of the Storage account key and can be constrained to the required resource, permission, and short expiry. It is the recommended SAS type when supported.",
+    source: sources.storageSas,
+  },
+  {
+    id: 106,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Configure private network isolation for Foundry",
+    difficulty: "Advanced",
+    type: "multi",
+    stem: "A production Foundry solution must prevent public-path access to its resource and connected Storage service. Which two actions are required?",
+    options: [
+      { id: "a", text: "Create the required private endpoints and configure private DNS name resolution" },
+      { id: "b", text: "Disable public network access after private connectivity is verified" },
+      { id: "c", text: "Embed the resource keys in the mobile client" },
+      { id: "d", text: "Increase the model's maximum output tokens" },
+    ],
+    correct: ["a", "b"],
+    selectCount: 2,
+    explanation: "Private endpoints provide private network interfaces, and private DNS resolves service names to those interfaces. Disabling public network access closes the public path; client-side keys and model settings do not provide network isolation.",
+    source: sources.foundryPrivateLink,
+  },
+  {
+    id: 107,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Construct a keyless Foundry project client in Python",
+    difficulty: "Intermediate",
+    type: "code",
+    language: "python",
+    stem: "Complete the supported Python client construction. The project endpoint is stored in the documented environment variable.",
+    code: `import os
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+project_client = AIProjectClient(
+    endpoint=os.environ["{{endpoint_var}}"],
+    credential={{credential}}(),
+)`,
+    blanks: [
+      {
+        id: "endpoint_var",
+        label: "Endpoint environment variable",
+        options: [
+          { id: "project_endpoint", text: "FOUNDRY_PROJECT_ENDPOINT" },
+          { id: "storage_endpoint", text: "AZURE_STORAGE_ENDPOINT" },
+          { id: "model_name", text: "FOUNDRY_MODEL_NAME" },
+        ],
+      },
+      {
+        id: "credential",
+        label: "Credential class",
+        options: [
+          { id: "default", text: "DefaultAzureCredential" },
+          { id: "key", text: "AzureKeyCredential" },
+          { id: "anonymous", text: "AnonymousCredential" },
+        ],
+      },
+    ],
+    correct: { endpoint_var: "project_endpoint", credential: "default" },
+    explanation: "The Azure AI Projects client uses the Foundry project endpoint and a TokenCredential. DefaultAzureCredential supports local Azure CLI credentials and managed identity in Azure without placing an API key in source code.",
+    source: sources.responsesApi,
+  },
+  {
+    id: 108,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Call the Responses API through a Foundry project client",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "Complete the Python code that obtains an authenticated OpenAI client from an existing AIProjectClient and calls the deployed model named by an environment variable.",
+    code: `openai_client = project_client.{{client_method}}()
+
+response = openai_client.responses.create(
+    model=os.environ["{{model_var}}"],
+    input="Summarize the approved policy.",
+)`,
+    blanks: [
+      {
+        id: "client_method",
+        label: "Client method",
+        options: [
+          { id: "openai", text: "get_openai_client" },
+          { id: "search", text: "get_search_client" },
+          { id: "credential", text: "get_default_credential" },
+        ],
+      },
+      {
+        id: "model_var",
+        label: "Model deployment variable",
+        options: [
+          { id: "model_name", text: "FOUNDRY_MODEL_NAME" },
+          { id: "project_endpoint", text: "FOUNDRY_PROJECT_ENDPOINT" },
+          { id: "tenant_id", text: "AZURE_TENANT_ID" },
+        ],
+      },
+    ],
+    correct: { client_method: "openai", model_var: "model_name" },
+    explanation: "AIProjectClient.get_openai_client returns an authenticated client for Responses operations. The model argument is the Foundry deployment name, not the project endpoint or tenant identifier.",
+    source: sources.responsesApi,
+  },
+  {
+    id: 109,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Define a bounded JSON schema for a function tool",
+    difficulty: "Intermediate",
+    type: "code",
+    language: "json",
+    stem: "Complete the function parameter schema so the tool accepts a JSON object with declared fields.",
+    code: `{
+  "name": "create_work_order",
+  "parameters": {
+    "type": "{{root_type}}",
+    "{{fields_key}}": {
+      "equipment_id": { "type": "string" },
+      "priority": { "type": "string", "enum": ["normal", "urgent"] }
+    },
+    "required": ["equipment_id"]
+  }
+}`,
+    blanks: [
+      {
+        id: "root_type",
+        label: "Root JSON type",
+        options: [
+          { id: "object", text: "object" },
+          { id: "array", text: "array" },
+          { id: "string", text: "string" },
+        ],
+      },
+      {
+        id: "fields_key",
+        label: "Field definitions keyword",
+        options: [
+          { id: "properties", text: "properties" },
+          { id: "arguments", text: "arguments" },
+          { id: "columns", text: "columns" },
+        ],
+      },
+    ],
+    correct: { root_type: "object", fields_key: "properties" },
+    explanation: "JSON Schema represents a named-argument tool payload as an object and declares its fields under properties. Required and enum constraints further reduce ambiguous or invalid tool arguments before server-side validation.",
+    source: sources.openApiTools,
+  },
+  {
+    id: 110,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Call Prompt Shields for user and document attacks",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "Complete the Prompt Shields request that analyzes both the user input and retrieved grounding text.",
+    code: `POST {endpoint}/contentsafety/text:shieldPrompt?api-version={{api_version}}
+Content-Type: application/json
+
+{
+  "userPrompt": "Summarize this policy",
+  "{{grounding_field}}": ["Retrieved policy text"]
+}`,
+    blanks: [
+      {
+        id: "api_version",
+        label: "Prompt Shields API version",
+        options: [
+          { id: "current", text: "2024-09-01" },
+          { id: "document_intelligence", text: "2024-11-30" },
+          { id: "search", text: "2025-09-01" },
+        ],
+      },
+      {
+        id: "grounding_field",
+        label: "Retrieved text field",
+        options: [
+          { id: "documents", text: "documents" },
+          { id: "tools", text: "tools" },
+          { id: "vectors", text: "vectors" },
+        ],
+      },
+    ],
+    correct: { api_version: "current", grounding_field: "documents" },
+    explanation: "The Prompt Shields REST path uses API version 2024-09-01. The body contains userPrompt and a documents array so the response can independently report direct user-prompt attacks and indirect attacks in grounding documents.",
+    source: sources.promptShields,
+  },
+  {
+    id: 111,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Troubleshoot authorization for agent requests",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A managed identity obtains a nonexpired token and reaches a Foundry agent endpoint, but every Responses request returns 403 Forbidden. What is the most likely corrective action?",
+    options: [
+      { id: "a", text: "Assign an agent-interaction role such as Foundry Agent Consumer at the project or agent scope" },
+      { id: "b", text: "Increase the response temperature" },
+      { id: "c", text: "Regenerate the Azure AI Search vectors" },
+      { id: "d", text: "Change the request body to XML" },
+    ],
+    correct: "a",
+    explanation: "A 403 response after successful token acquisition points to authorization rather than model behavior. The identity needs an RBAC data action that permits interaction with the target agent endpoint at an applicable project or agent scope.",
+    source: sources.foundryRbac,
+  },
+  {
+    id: 112,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Act on Prompt Shields document detections",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Prompt Shields returns documentsAnalysis[2].attackDetected = true for one retrieved passage. What should a grounded agent do?",
+    options: [
+      { id: "a", text: "Exclude or block that passage, record the event, and continue only with trusted evidence under the application's policy" },
+      { id: "b", text: "Place the passage first in the prompt so the model can decide whether to follow it" },
+      { id: "c", text: "Treat the detected instructions as a higher-priority system message" },
+      { id: "d", text: "Disable normal content-safety checks because Prompt Shields already ran" },
+    ],
+    correct: "a",
+    explanation: "A detected document attack identifies untrusted grounding content that may be trying to redirect the model. The application should enforce its block or exclusion policy and retain an audit event; Prompt Shields does not replace other safety controls.",
+    source: sources.promptShields,
+  },
+  {
+    id: 113,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Handle transient service throttling safely",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "An agent's model call intermittently returns HTTP 429 during a traffic spike. What is the best client behavior?",
+    options: [
+      { id: "a", text: "Honor Retry-After when supplied and use bounded exponential backoff with jitter" },
+      { id: "b", text: "Retry immediately in an unlimited tight loop" },
+      { id: "c", text: "Replace the managed identity with a hard-coded API key" },
+      { id: "d", text: "Mark the request successful without a response" },
+    ],
+    correct: "a",
+    explanation: "HTTP 429 indicates throttling. A bounded retry policy that respects server guidance and adds exponential backoff with jitter reduces synchronized retry pressure while still recovering from a transient capacity condition.",
+    source: sources.pythonErrors,
+  },
+  {
+    id: 114,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Map common model API failures to remediation",
+    difficulty: "Advanced",
+    type: "match",
+    stem: "Match each model API error to the most appropriate first remediation.",
+    prompts: [
+      { id: "p1", text: "DeploymentNotFound" },
+      { id: "p2", text: "401 Unauthorized" },
+      { id: "p3", text: "429 Too Many Requests" },
+    ],
+    choices: [
+      { id: "c1", text: "Verify the configured deployment name" },
+      { id: "c2", text: "Verify the credential and endpoint authentication configuration" },
+      { id: "c3", text: "Apply a bounded exponential-backoff retry policy" },
+    ],
+    correct: { p1: "c1", p2: "c2", p3: "c3" },
+    explanation: "DeploymentNotFound usually means the deployment name is absent or misspelled, 401 indicates missing or invalid authentication, and 429 indicates rate limiting that should be handled with a controlled backoff policy.",
+    source: sources.imageGeneration,
+  },
+  {
+    id: 115,
+    section: "general",
+    domain: "Implement computer vision solutions",
+    objective: "Construct a masked image-edit REST request",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "Complete the multipart request that edits only the region identified by mask.png for a deployed GPT-image model.",
+    code: `POST {endpoint}/openai/deployments/{deployment}/images/{{operation}}?api-version=2025-04-01-preview
+Api-Key: {key}
+Content-Type: multipart/form-data
+
+prompt="Replace the background with a snowy trail"
+image=@source.png
+{{mask_field}}=@mask.png`,
+    blanks: [
+      {
+        id: "operation",
+        label: "Image operation",
+        options: [
+          { id: "edits", text: "edits" },
+          { id: "embeddings", text: "embeddings" },
+          { id: "transcriptions", text: "transcriptions" },
+        ],
+      },
+      {
+        id: "mask_field",
+        label: "Multipart mask field",
+        options: [
+          { id: "mask", text: "mask" },
+          { id: "vector", text: "vector" },
+          { id: "grounding", text: "grounding" },
+        ],
+      },
+    ],
+    correct: { operation: "edits", mask_field: "mask" },
+    explanation: "GPT-image editing uses the images/edits operation with multipart image data. Supplying the source image, prompt, and mask lets the model perform an inpainting-style edit constrained to the mask-defined region.",
+    source: sources.imageGeneration,
+  },
+  {
+    id: 116,
+    section: "general",
+    domain: "Implement computer vision solutions",
+    objective: "Validate masks for image inpainting",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A 1024 × 1024 source PNG will be edited with a mask. Which mask meets the documented dimensional requirement?",
+    options: [
+      { id: "a", text: "A mask with the same 1024 × 1024 dimensions as the source image" },
+      { id: "b", text: "Any 16 × 16 mask because the service always stretches it" },
+      { id: "c", text: "A text file containing the desired rectangle" },
+      { id: "d", text: "A vector embedding with 1,536 dimensions" },
+    ],
+    correct: "a",
+    explanation: "The image-editing guidance requires the mask to have the same dimensions as the input image. This keeps the editable pixels spatially aligned with the source; a vector or unrelated text description is not an image mask.",
+    source: sources.imageGeneration,
+  },
+  {
+    id: 117,
+    section: "general",
+    domain: "Implement computer vision solutions",
+    objective: "Extract time-aligned evidence from video",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Reviewers must locate the exact interval in a campaign video that contains spoken claims, on-screen text, and product imagery. Which approach is the best fit?",
+    options: [
+      { id: "a", text: "Use a Content Understanding video analyzer and retain segment timestamps and source grounding" },
+      { id: "b", text: "Generate one caption from the video filename" },
+      { id: "c", text: "Store only a video-level vector and discard the source intervals" },
+      { id: "d", text: "Use Document Translation without analyzing the video" },
+    ],
+    correct: "a",
+    explanation: "Content Understanding supports video analysis that combines speech and visual evidence into structured results. Time-aligned segments and grounding let reviewers verify a claim against the relevant scene instead of trusting an untraceable summary.",
+    source: sources.content,
+  },
+  {
+    id: 118,
+    section: "general",
+    domain: "Implement computer vision solutions",
+    objective: "Understand current GPT-image output and editing behavior",
+    difficulty: "Advanced",
+    type: "matrix",
+    stem: "For each statement about current GPT-image series workflows in Azure, select Yes if the statement is true. Otherwise, select No.",
+    rows: [
+      { id: "r1", text: "Supported GPT-image models can perform inpainting or variations from image input and a prompt." },
+      { id: "r2", text: "The application must receive every generated GPT-image result as a hosted URL rather than base64 data." },
+      { id: "r3", text: "An edit mask can have arbitrary dimensions unrelated to the source image." },
+    ],
+    columns: [
+      { id: "yes", text: "Yes" },
+      { id: "no", text: "No" },
+    ],
+    correct: { r1: "yes", r2: "no", r3: "no" },
+    explanation: "Current GPT-image models support editing and variations, and Azure documents base64 image output rather than requiring hosted URLs. For a masked edit, the mask must align with and have the same dimensions as the input image.",
+    source: sources.imageGeneration,
+  },
+  {
+    id: 119,
+    section: "general",
+    domain: "Implement text analysis solutions",
+    objective: "Construct a short-audio Speech REST request",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "Complete the request for a 16-kHz PCM WAV file containing US English speech. The key header and binary request body are already supplied.",
+    code: `POST https://westeurope.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language={{language}}&format=detailed
+Ocp-Apim-Subscription-Key: {speech-key}
+Content-Type: {{content_type}}
+
+<binary audio body>`,
+    blanks: [
+      {
+        id: "language",
+        label: "Recognition language",
+        options: [
+          { id: "en_us", text: "en-US" },
+          { id: "fr_fr", text: "fr-FR" },
+          { id: "de_de", text: "de-DE" },
+        ],
+      },
+      {
+        id: "content_type",
+        label: "Audio content type",
+        options: [
+          { id: "pcm_wav", text: "audio/wav; codecs=audio/pcm; samplerate=16000" },
+          { id: "json", text: "application/json" },
+          { id: "multipart", text: "multipart/form-data" },
+        ],
+      },
+    ],
+    correct: { language: "en_us", content_type: "pcm_wav" },
+    explanation: "The short-audio Speech REST endpoint requires the recognition locale in the language query parameter and an audio Content-Type that matches the binary body. A 16-kHz PCM WAV uses the documented audio/wav codec and sample-rate value.",
+    source: sources.speechShortAudio,
+  },
+  {
+    id: 120,
+    section: "general",
+    domain: "Implement text analysis solutions",
+    objective: "Troubleshoot Speech endpoint authentication",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A Speech REST request returns 401 after a team copies a resource key from West Europe but sends the request to an East US regional endpoint. What should it do first?",
+    options: [
+      { id: "a", text: "Use the endpoint or region that belongs to the Speech resource associated with that key" },
+      { id: "b", text: "Increase the audio sample rate until authentication succeeds" },
+      { id: "c", text: "Add the audio file to an Azure AI Search vector index" },
+      { id: "d", text: "Change the recognition language to every supported locale" },
+    ],
+    correct: "a",
+    explanation: "Speech credentials and regional endpoints must refer to the same resource context. A 401 is an authentication problem, so the team should verify the matching key, resource endpoint, region, and authorization header before changing audio settings.",
+    source: sources.speechShortAudio,
+  },
+  {
+    id: 121,
+    section: "general",
+    domain: "Implement text analysis solutions",
+    objective: "Select asynchronous transcription for stored audio",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A nightly job must transcribe 8,000 long recordings already stored in Blob Storage. Interactive partial results are not required. Which capability should the solution use?",
+    options: [
+      { id: "a", text: "Azure Speech batch transcription" },
+      { id: "b", text: "Real-time microphone recognition for every file" },
+      { id: "c", text: "Text-to-speech synthesis" },
+      { id: "d", text: "An image-generation edit operation" },
+    ],
+    correct: "a",
+    explanation: "Batch transcription is an asynchronous service for large volumes of prerecorded audio in storage. Real-time recognition is intended for live or interactive streams and would add unnecessary orchestration for a nightly historical workload.",
+    source: sources.batchSpeech,
+  },
+  {
+    id: 122,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Choose a prebuilt model for standardized invoices",
+    difficulty: "Intermediate",
+    type: "single",
+    stem: "A workload extracts vendor, invoice number, dates, totals, and line items from common business invoices. It needs the most direct supported starting point. Which tool should it use?",
+    options: [
+      { id: "a", text: "The Document Intelligence prebuilt invoice model" },
+      { id: "b", text: "A video Content Understanding analyzer" },
+      { id: "c", text: "A Speech phrase list" },
+      { id: "d", text: "A GPT-image edit mask" },
+    ],
+    correct: "a",
+    explanation: "Document Intelligence provides a prebuilt invoice model for standard invoice fields and line items. Starting with that specialized model is more direct than applying a video, speech, or image-generation capability to structured business documents.",
+    source: sources.documentToolChoice,
+  },
+  {
+    id: 123,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Choose Content Understanding for varied multimodal evidence",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "An intake package can include free-form letters, photographs, recorded interviews, and highly varied PDFs. The team wants inferred fields described in natural language without first labeling training data. What should it configure?",
+    options: [
+      { id: "a", text: "A custom Content Understanding analyzer with a field schema" },
+      { id: "b", text: "Only the Document Intelligence prebuilt receipt model" },
+      { id: "c", text: "A Search synonym map without any content analysis" },
+      { id: "d", text: "A text-to-speech voice deployment" },
+    ],
+    correct: "a",
+    explanation: "Content Understanding custom analyzers support documents, images, audio, and video and can infer schema-described fields from unstructured content without labeled training examples. A single structured-document prebuilt cannot cover the multimodal package.",
+    source: sources.documentToolChoice,
+  },
+  {
+    id: 124,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Construct a Document Intelligence layout request",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "Complete the GA Document Intelligence REST path to analyze document layout, tables, and structure.",
+    code: `POST {endpoint}/documentintelligence/documentModels/{{model_id}}:analyze?api-version={{api_version}}
+Content-Type: application/json
+
+{ "urlSource": "https://storage.example/manual.pdf" }`,
+    blanks: [
+      {
+        id: "model_id",
+        label: "Layout model ID",
+        options: [
+          { id: "layout", text: "prebuilt-layout" },
+          { id: "receipt", text: "prebuilt-receipt" },
+          { id: "read_aloud", text: "prebuilt-read-aloud" },
+        ],
+      },
+      {
+        id: "api_version",
+        label: "GA API version",
+        options: [
+          { id: "v4", text: "2024-11-30" },
+          { id: "prompt_shields", text: "2024-09-01" },
+          { id: "legacy", text: "2019-05-01" },
+        ],
+      },
+    ],
+    correct: { model_id: "layout", api_version: "v4" },
+    explanation: "Document Intelligence v4.0 GA uses API version 2024-11-30. The prebuilt-layout model extracts text, tables, selection marks, and document structure through the documentModels/{modelId}:analyze operation.",
+    source: sources.documentIntelligenceQuickstart,
+  },
+  {
+    id: 125,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Poll an asynchronous Content Understanding analysis",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "Complete the polling logic after a Content Understanding analyze request returns HTTP 202.",
+    code: `operation_url = response.headers["{{operation_header}}"]
+
+while True:
+    result = requests.get(operation_url, headers=headers).json()
+    if result["status"] == "{{success_status}}":
+        break`,
+    blanks: [
+      {
+        id: "operation_header",
+        label: "Polling URL header",
+        options: [
+          { id: "operation_location", text: "Operation-Location" },
+          { id: "content_location", text: "Content-Location" },
+          { id: "retry_after", text: "Retry-After" },
+        ],
+      },
+      {
+        id: "success_status",
+        label: "Successful terminal status",
+        options: [
+          { id: "succeeded", text: "Succeeded" },
+          { id: "accepted", text: "Accepted" },
+          { id: "running", text: "Running" },
+        ],
+      },
+    ],
+    correct: { operation_header: "operation_location", success_status: "succeeded" },
+    explanation: "The asynchronous analyze response exposes its result URL in Operation-Location. The client polls that URL until a terminal status is returned; Succeeded indicates that the analyzed content and fields are ready to consume.",
+    source: sources.contentQuickstart,
+  },
+  {
+    id: 126,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Define an Azure AI Search vector field",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "Complete the vector field definition. The vector search configuration already declares a profile named my-hnsw-profile for 1,536-dimension embeddings.",
+    code: `{
+  "name": "contentVector",
+  "type": "Collection(Edm.Single)",
+  "searchable": {{searchable}},
+  "retrievable": true,
+  "dimensions": 1536,
+  "vectorSearchProfile": "{{profile}}"
+}`,
+    blanks: [
+      {
+        id: "searchable",
+        label: "Vector field searchable setting",
+        options: [
+          { id: "true", text: "true" },
+          { id: "false", text: "false" },
+          { id: "null", text: "null" },
+        ],
+      },
+      {
+        id: "profile",
+        label: "Vector search profile",
+        options: [
+          { id: "hnsw", text: "my-hnsw-profile" },
+          { id: "lucene", text: "standard.lucene" },
+          { id: "semantic", text: "semantic-config" },
+        ],
+      },
+    ],
+    correct: { searchable: "true", profile: "hnsw" },
+    explanation: "A vector field uses Collection(Edm.Single), must be searchable, declares dimensions matching the embedding model, and references a vectorSearchProfile defined in the index. A semantic configuration or text analyzer is not a vector profile.",
+    source: sources.searchIndex,
+  },
+  {
+    id: 127,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Configure a custom analyzer for exact identifiers",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "Complete the Azure AI Search analyzer definition that keeps a punctuation-heavy product code as one token before optional token filters run.",
+    code: `{
+  "name": "product_code_analyzer",
+  "@odata.type": "{{analyzer_type}}",
+  "tokenizer": "{{tokenizer}}",
+  "tokenFilters": ["lowercase"]
+}`,
+    blanks: [
+      {
+        id: "analyzer_type",
+        label: "Analyzer OData type",
+        options: [
+          { id: "custom", text: "#Microsoft.Azure.Search.CustomAnalyzer" },
+          { id: "hnsw", text: "#Microsoft.Azure.Search.HnswAlgorithmConfiguration" },
+          { id: "skill", text: "#Microsoft.Skills.Text.SplitSkill" },
+        ],
+      },
+      {
+        id: "tokenizer",
+        label: "Whole-value tokenizer",
+        options: [
+          { id: "keyword", text: "keyword_v2" },
+          { id: "standard", text: "standard_v2" },
+          { id: "path", text: "path_hierarchy_v2" },
+        ],
+      },
+    ],
+    correct: { analyzer_type: "custom", tokenizer: "keyword" },
+    explanation: "A custom analyzer uses the Microsoft.Azure.Search.CustomAnalyzer OData type and exactly one tokenizer. keyword_v2 emits the whole input as a token, making it suitable when punctuation-heavy identifiers must remain intact before normalization.",
+    source: sources.searchAnalyzers,
+  },
+  {
+    id: 128,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Change field filtering behavior safely",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "An existing Azure AI Search index has a tenantId field that was created with filterable set to false. The field must now support authorization filters. What should the team do?",
+    options: [
+      { id: "a", text: "Add a new filterable field and repopulate it, or rebuild the index with the corrected schema" },
+      { id: "b", text: "Toggle filterable to true in place without reindexing" },
+      { id: "c", text: "Put the tenant restriction only in the model prompt" },
+      { id: "d", text: "Store the tenant ID in the vector dimensions property" },
+    ],
+    correct: "a",
+    explanation: "Azure AI Search does not let an existing field be changed to filterable in place. The supported choices are a new field populated with the desired attribute or an index rebuild; prompt instructions are not an authorization filter.",
+    source: sources.searchFieldFilters,
+  },
+  {
+    id: 129,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Train a model for labeled document variants",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "A company has labeled examples of a structured application form across several visual variants and needs custom field extraction. Which approach is most appropriate?",
+    options: [
+      { id: "a", text: "Train a Document Intelligence custom neural model with buildMode set to neural" },
+      { id: "b", text: "Use an image-generation model to redraw every form" },
+      { id: "c", text: "Use only a Speech batch transcription job" },
+      { id: "d", text: "Configure a Search scoring profile without extracting fields" },
+    ],
+    correct: "a",
+    explanation: "A Document Intelligence custom neural model is designed for custom extraction from labeled structured or semi-structured documents with layout variation. The training build mode is neural; unrelated media and ranking services do not train field extraction.",
+    source: sources.documentIntelligenceTraining,
+  },
+  {
+    id: 130,
+    section: "general",
+    domain: "Implement information extraction solutions",
+    objective: "Design grounded Content Understanding output",
+    difficulty: "Advanced",
+    type: "multi",
+    stem: "Which three design choices make a custom Content Understanding result useful for automated processing and human verification?",
+    options: [
+      { id: "a", text: "Declare typed business fields and descriptions in the field schema" },
+      { id: "b", text: "Retain confidence and source-grounding information such as spans, regions, or media intervals" },
+      { id: "c", text: "Enable the content and modality features needed for OCR, layout, tables, charts, audio, or video" },
+      { id: "d", text: "Discard source locations immediately after a value is generated" },
+      { id: "e", text: "Treat every low-confidence inferred value as an automatically approved fact" },
+    ],
+    correct: ["a", "b", "c"],
+    selectCount: 3,
+    explanation: "A typed field schema supplies the machine contract, modality-appropriate extraction preserves useful content, and confidence plus grounding supports reviewer verification. Discarding evidence or auto-approving uncertain fields undermines reliable automation.",
+    source: sources.content,
+  },
 ];
 
 export const sectionMeta: Record<SectionId, { label: string; description: string }> = {
@@ -2245,7 +3270,11 @@ export const sectionMeta: Record<SectionId, { label: string; description: string
   },
   general: {
     label: "General",
-    description: "Independent scenarios · 40 selected questions",
+    description: "Independent scenarios · 43 selected questions",
+  },
+  decision: {
+    label: "Decision sequence",
+    description: "Three Yes/No items · answers lock on advance",
   },
 };
 

@@ -32,7 +32,9 @@ test("option order is seeded, repeatable, and does not mutate the question bank"
   assert.deepEqual(first, repeated);
   assert.ok(
     Object.keys(first).some(
-      (id) => first[Number(id)].join(",") !== anotherAttempt[Number(id)].join(","),
+      (id) =>
+        JSON.stringify(first[Number(id)]) !==
+        JSON.stringify(anotherAttempt[Number(id)]),
     ),
     "a new attempt seed should change at least one question's option order",
   );
@@ -40,9 +42,11 @@ test("option order is seeded, repeatable, and does not mutate the question bank"
   for (const question of questions) {
     const ids = sourceIds(question);
     if (!ids) continue;
+    const displayedOrder = first[question.id];
+    assert.ok(Array.isArray(displayedOrder));
 
     assert.deepEqual(
-      [...first[question.id]].sort(),
+      [...displayedOrder].sort(),
       [...ids].sort(),
       `question ${question.id} should retain exactly the same option IDs`,
     );
@@ -69,7 +73,9 @@ test("single-answer correct positions are balanced across the displayed letters"
     for (const [optionCount, group] of groups) {
       const counts = Array.from({ length: optionCount }, () => 0);
       for (const question of group) {
-        const correctPosition = orderMap[question.id].indexOf(question.correct);
+        const displayedOrder = orderMap[question.id];
+        assert.ok(Array.isArray(displayedOrder));
+        const correctPosition = displayedOrder.indexOf(question.correct);
         assert.ok(correctPosition >= 0);
         counts[correctPosition] += 1;
       }
@@ -89,12 +95,44 @@ test("multi-select correct answers never occupy the first N displayed choices", 
     for (const question of questions) {
       if (question.type !== "multi") continue;
       const correct = new Set(question.correct);
-      const displayedPrefix = orderMap[question.id].slice(0, question.selectCount);
+      const displayedOrder = orderMap[question.id];
+      assert.ok(Array.isArray(displayedOrder));
+      const displayedPrefix = displayedOrder.slice(0, question.selectCount);
 
       assert.equal(
         displayedPrefix.every((id) => correct.has(id)),
         false,
         `question ${question.id} should not reveal the answer as its first ${question.selectCount} choices`,
+      );
+    }
+  }
+});
+
+test("code-completion choices are shuffled independently for every blank", () => {
+  const codeQuestions = questions.filter(
+    (question): question is Extract<Question, { type: "code" }> =>
+      question.type === "code",
+  );
+
+  for (const question of codeQuestions) {
+    for (const blank of question.blanks) {
+      const correctPositions = new Set<number>();
+
+      for (let seed = 1; seed <= 32; seed += 1) {
+        const optionOrder = createOptionOrderMap(questions, seed)[question.id];
+        assert.ok(!Array.isArray(optionOrder));
+        assert.deepEqual(
+          [...optionOrder[blank.id]].sort(),
+          blank.options.map((option) => option.id).sort(),
+        );
+        correctPositions.add(
+          optionOrder[blank.id].indexOf(question.correct[blank.id]),
+        );
+      }
+
+      assert.ok(
+        correctPositions.size >= 2,
+        `question ${question.id}, blank ${blank.id} should not keep one correct position`,
       );
     }
   }

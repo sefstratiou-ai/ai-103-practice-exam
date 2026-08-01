@@ -502,6 +502,16 @@ textarea:focus-visible {
 .overview-stats span { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; }
 .overview-stats strong { font-size: 1.1rem; font-weight: 600; }
 
+.overview-note {
+  background: #eef6fb;
+  border-left: 3px solid var(--blue);
+  color: #41556d;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  margin: -18px 0 34px;
+  padding: 11px 14px;
+}
+
 .overview-columns {
   display: grid;
   gap: 48px;
@@ -646,6 +656,15 @@ textarea:focus-visible {
   background: #fff;
   border-left-color: var(--blue);
   color: var(--blue);
+}
+
+.exam-tools button:disabled,
+.exam-tools button:disabled:hover {
+  background: transparent;
+  border-left-color: transparent;
+  color: #718096;
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .exam-tools button > span {
@@ -794,6 +813,16 @@ textarea:focus-visible {
   padding: 16px 18px;
 }
 
+.decision-notice {
+  background: #fff4ce;
+  border-left: 4px solid #d09a00;
+  color: #554509;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin-bottom: 18px;
+  padding: 13px 16px;
+}
+
 .question-card h1 {
   font-size: clamp(1.25rem, 2vw, 1.65rem);
   font-weight: 500;
@@ -848,8 +877,61 @@ textarea:focus-visible {
 }
 
 .selected .choice-letter { background: var(--blue); color: #fff; }
+.decision-options { max-width: 560px; }
 .selection-count { color: var(--muted); font-size: 0.75rem; margin-top: 10px; text-align: right; }
 .inline-notice { background: #fff4ce; border-left: 4px solid #e5a100; font-size: 0.82rem; margin-top: 14px; padding: 12px; }
+
+.code-answer {
+  background: #111a24;
+  border: 1px solid #314154;
+  color: #e8edf4;
+  overflow: hidden;
+}
+
+.code-language {
+  background: #1d2a38;
+  border-bottom: 1px solid #314154;
+  color: #a9c7e8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 9px 14px;
+  text-transform: uppercase;
+}
+
+.code-answer pre {
+  background: transparent;
+  color: inherit;
+  font-family: Consolas, "Cascadia Code", "Courier New", monospace;
+  font-size: 0.88rem;
+  line-height: 2.25;
+  margin: 0;
+  overflow-x: auto;
+  padding: 18px;
+  white-space: pre-wrap;
+}
+
+.code-answer code { font-family: inherit; }
+
+.code-answer select {
+  background: #fff;
+  border: 2px solid #62a8e5;
+  border-radius: 2px;
+  color: #172437;
+  font-family: inherit;
+  font-size: 0.82rem;
+  margin: 0 3px;
+  max-width: min(100%, 360px);
+  min-height: 34px;
+  padding: 4px 30px 4px 8px;
+}
+
+.code-answer .answer-instruction {
+  border-top: 1px solid #314154;
+  color: #c4d0dd;
+  margin: 0;
+  padding: 11px 18px;
+}
 
 .order-answer ol {
   list-style: none;
@@ -1309,4 +1391,3 @@ textarea:focus-visible {
   .domain-report,
   .review-report { box-shadow: none; page-break-inside: avoid; }
 }
-

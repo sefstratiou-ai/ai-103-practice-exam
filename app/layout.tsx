@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "A full-length, unofficial AI-103 practice exam simulator aligned to Microsoft's April 2026 skills outline.",
     openGraph: {
       title: "AI-103 Practice Exam",
-      description: "95 original questions · 50 per attempt · 5 skill domains",
+      description: "130 original questions · 51 per attempt · 5 skill domains",
       type: "website",
       images: [{ url: imageUrl, width: 1200, height: 630, alt: "AI-103 Practice Exam" }],
     },

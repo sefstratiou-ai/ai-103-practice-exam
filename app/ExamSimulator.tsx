@@ -13,6 +13,7 @@ import {
   createAttemptSeed,
   createOptionOrderMap,
   orderByIds,
+  type OptionOrder,
 } from "./optionShuffle";
 import {
   createExamSelection,
@@ -31,7 +32,7 @@ type ExamMode = "timed" | "study";
 type QuestionAnswer = string | string[] | Record<string, string>;
 
 type SavedAttempt = {
-  version: 2;
+  version: 3;
   optionSeed: number;
   questionIds: number[];
   screen: ExamScreen;
@@ -52,7 +53,7 @@ type SavedAttempt = {
 };
 
 const STORAGE_KEY = "ai103-practice-attempt-v1";
-const EXAM_SECONDS = 120 * 60;
+const EXAM_SECONDS = 100 * 60;
 const initialQuestionIds = createExamSelection(
   questionPool,
   caseStudyPool,
@@ -69,7 +70,7 @@ const learnLinks = [
   {
     label: "Microsoft Foundry documentation",
     description: "Models, projects, deployments, and operations",
-    url: "https://learn.microsoft.com/en-us/azure/ai-foundry/",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/",
     keywords: "foundry model deployment quota project",
   },
   {
@@ -117,7 +118,9 @@ function formatClock(totalSeconds: number) {
 
 function answerIsComplete(question: Question, answer?: QuestionAnswer) {
   if (answer == null) return false;
-  if (question.type === "single") return typeof answer === "string" && !!answer;
+  if (question.type === "single" || question.type === "decision") {
+    return typeof answer === "string" && !!answer;
+  }
   if (question.type === "multi") {
     return Array.isArray(answer) && answer.length === question.selectCount;
   }
@@ -125,6 +128,9 @@ function answerIsComplete(question: Question, answer?: QuestionAnswer) {
     return Array.isArray(answer) && answer.length === question.options.length;
   }
   if (typeof answer !== "object" || Array.isArray(answer)) return false;
+  if (question.type === "code") {
+    return question.blanks.every((blank) => !!answer[blank.id]);
+  }
   const expected =
     question.type === "match" ? question.prompts.length : question.rows.length;
   return Object.keys(answer).length === expected;
@@ -132,7 +138,9 @@ function answerIsComplete(question: Question, answer?: QuestionAnswer) {
 
 function answerIsCorrect(question: Question, answer?: QuestionAnswer) {
   if (!answerIsComplete(question, answer)) return false;
-  if (question.type === "single") return answer === question.correct;
+  if (question.type === "single" || question.type === "decision") {
+    return answer === question.correct;
+  }
   if (question.type === "multi") {
     const selected = [...(answer as string[])].sort();
     return selected.join("|") === [...question.correct].sort().join("|");
@@ -145,6 +153,12 @@ function answerIsCorrect(question: Question, answer?: QuestionAnswer) {
 }
 
 function optionText(question: Question, id: string) {
+  if (question.type === "decision") return id === "yes" ? "Yes" : "No";
+  if (question.type === "code") {
+    return question.blanks
+      .flatMap((blank) => blank.options)
+      .find((option) => option.id === id)?.text ?? id;
+  }
   if (question.type === "single" || question.type === "multi" || question.type === "order") {
     return question.options.find((option) => option.id === id)?.text ?? id;
   }
@@ -155,13 +169,25 @@ function optionText(question: Question, id: string) {
 }
 
 function correctAnswerText(question: Question) {
-  if (question.type === "single") return optionText(question, question.correct);
+  if (question.type === "single" || question.type === "decision") {
+    return optionText(question, question.correct);
+  }
   if (question.type === "multi") {
     return question.correct.map((id) => optionText(question, id)).join(" · ");
   }
   if (question.type === "order") {
     return question.correct
       .map((id, index) => `${index + 1}. ${optionText(question, id)}`)
+      .join("\n");
+  }
+  if (question.type === "code") {
+    return question.blanks
+      .map((blank) => {
+        const correctOption = blank.options.find(
+          (option) => option.id === question.correct[blank.id],
+        );
+        return `${blank.label}: ${correctOption?.text ?? question.correct[blank.id]}`;
+      })
       .join("\n");
   }
   const rows = question.type === "match" ? question.prompts : question.rows;
@@ -182,6 +208,10 @@ function questionTypeLabel(question: Question) {
       return "Match items";
     case "matrix":
       return "Yes / No";
+    case "decision":
+      return "Yes / No · no review";
+    case "code":
+      return "Complete the code";
   }
 }
 
@@ -202,9 +232,9 @@ export default function ExamSimulator() {
   const [screen, setScreen] = useState<ExamScreen>("welcome");
   const [mode, setMode] = useState<ExamMode>("timed");
   const [accepted, setAccepted] = useState(false);
-  const [currentId, setCurrentId] = useState(1);
-  const [currentSection, setCurrentSection] = useState<SectionId>("northwind");
-  const [reviewSection, setReviewSection] = useState<SectionId>("northwind");
+  const [currentId, setCurrentId] = useState(initialQuestionIds[0]);
+  const [currentSection, setCurrentSection] = useState<SectionId>("general");
+  const [reviewSection, setReviewSection] = useState<SectionId>("general");
   const [answers, setAnswers] = useState<Record<number, QuestionAnswer>>({});
   const [marked, setMarked] = useState<number[]>([]);
   const [comments, setComments] = useState<Record<number, string>>({});
@@ -244,23 +274,31 @@ export default function ExamSimulator() {
     [examQuestions, optionSeed],
   );
   const activeCase = attemptCaseStudies.find((item) => item.id === currentSection);
-  const sectionQuestions = examQuestions.filter((question) => question.section === currentSection);
-  const reviewQuestions = examQuestions.filter((question) => question.section === reviewSection);
+  const sectionQuestions = useMemo(
+    () => examQuestions.filter((question) => question.section === currentSection),
+    [currentSection, examQuestions],
+  );
+  const reviewQuestions = useMemo(
+    () => examQuestions.filter((question) => question.section === reviewSection),
+    [examQuestions, reviewSection],
+  );
   const currentSectionIndex = sectionQuestions.findIndex((question) => question.id === currentId);
   const currentGlobalIndex = examQuestions.findIndex((question) => question.id === currentId);
   const answeredCount = examQuestions.filter((question) =>
     answerIsComplete(question, answers[question.id]),
   ).length;
+  const inDecisionSequence = currentSection === "decision";
 
   function getSectionLabel(section: SectionId) {
     if (section === "general") return "General";
-    const position = sectionOrder.indexOf(section);
+    if (section === "decision") return "Decision sequence";
+    const position = attemptCaseStudies.findIndex((caseStudy) => caseStudy.id === section);
     return `Case study ${position + 1}`;
   }
 
   const attemptState = useMemo<SavedAttempt>(
     () => ({
-      version: 2,
+      version: 3,
       optionSeed,
       questionIds,
       screen,
@@ -301,6 +339,7 @@ export default function ExamSimulator() {
   );
 
   useEffect(() => {
+    let restoredAttempt: SavedAttempt | null = null;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -311,21 +350,27 @@ export default function ExamSimulator() {
           version: number;
           questionIds?: number[];
         };
-        if ((parsed.version === 1 || parsed.version === 2) && parsed.screen !== "welcome") {
-          setSavedAttempt({
+        if (
+          parsed.version === 3 &&
+          parsed.screen !== "welcome" &&
+          parsed.questionIds?.length === EXAM_QUESTION_COUNT
+        ) {
+          restoredAttempt = {
             ...parsed,
-            version: 2,
-            questionIds:
-              parsed.questionIds?.length === EXAM_QUESTION_COUNT
-                ? parsed.questionIds
-                : questionPool.slice(0, EXAM_QUESTION_COUNT).map((question) => question.id),
-          });
+            version: 3,
+            questionIds: parsed.questionIds,
+          };
         }
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
     }
-    setHydrated(true);
+
+    const hydrationFrame = window.requestAnimationFrame(() => {
+      setSavedAttempt(restoredAttempt);
+      setHydrated(true);
+    });
+    return () => window.cancelAnimationFrame(hydrationFrame);
   }, []);
 
   useEffect(() => {
@@ -356,13 +401,6 @@ export default function ExamSimulator() {
     return () => window.clearInterval(timer);
   }, [deadline, finishExam, mode, screen]);
 
-  useEffect(() => {
-    if (screen !== "exam") return;
-    setViewed((previous) =>
-      previous.includes(currentId) ? previous : [...previous, currentId],
-    );
-  }, [currentId, screen]);
-
   const goToQuestion = useCallback(
     (id: number) => {
       const target = examQuestions.find((question) => question.id === id);
@@ -371,6 +409,9 @@ export default function ExamSimulator() {
       setCurrentSection(target.section);
       setReviewSection(target.section);
       setScreen("exam");
+      setViewed((previous) =>
+        previous.includes(id) ? previous : [...previous, id],
+      );
       setCaseTab(0);
       setNotice("");
     },
@@ -378,20 +419,35 @@ export default function ExamSimulator() {
   );
 
   const goPrevious = useCallback(() => {
-    if (currentSectionIndex <= 0) return;
+    if (currentSection === "decision" || currentSectionIndex <= 0) return;
     const target = sectionQuestions[currentSectionIndex - 1];
     if (!lockedQuestions.includes(target.id)) goToQuestion(target.id);
-  }, [currentSectionIndex, goToQuestion, lockedQuestions, sectionQuestions]);
+  }, [currentSection, currentSectionIndex, goToQuestion, lockedQuestions, sectionQuestions]);
 
   const goNext = useCallback(() => {
     const nextInSection = sectionQuestions[currentSectionIndex + 1];
+    if (currentSection === "decision") {
+      if (!answerIsComplete(currentQuestion, answers[currentId])) {
+        setNotice("Choose Yes or No before continuing. Your answer will lock when you advance.");
+        return;
+      }
+      setLockedQuestions((previous) =>
+        previous.includes(currentId) ? previous : [...previous, currentId],
+      );
+      if (nextInSection) {
+        goToQuestion(nextInSection.id);
+      } else {
+        finishExam();
+      }
+      return;
+    }
     if (nextInSection) {
       goToQuestion(nextInSection.id);
       return;
     }
     setReviewSection(currentSection);
     setScreen("review");
-  }, [currentSection, currentSectionIndex, goToQuestion, sectionQuestions]);
+  }, [answers, currentId, currentQuestion, currentSection, currentSectionIndex, finishExam, goToQuestion, sectionQuestions]);
 
   useEffect(() => {
     if (screen !== "exam" || helpOpen || breakDialogOpen || onBreak || finishDialog) return;
@@ -405,7 +461,7 @@ export default function ExamSimulator() {
         event.preventDefault();
         goPrevious();
       }
-      if (event.key.toLowerCase() === "r") {
+      if (event.key.toLowerCase() === "r" && currentSection !== "decision") {
         event.preventDefault();
         setMarked((previous) =>
           previous.includes(currentId)
@@ -416,7 +472,7 @@ export default function ExamSimulator() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [breakDialogOpen, currentId, finishDialog, goNext, goPrevious, helpOpen, onBreak, screen]);
+  }, [breakDialogOpen, currentId, currentSection, finishDialog, goNext, goPrevious, helpOpen, onBreak, screen]);
 
   function resetAttempt(nextMode: ExamMode = mode) {
     const nextSeed = createAttemptSeed();
@@ -465,7 +521,11 @@ export default function ExamSimulator() {
     setAnswers(saved.answers ?? {});
     setMarked(saved.marked ?? []);
     setComments(saved.comments ?? {});
-    setViewed(saved.viewed ?? []);
+    setViewed(
+      (saved.viewed ?? []).includes(saved.currentId)
+        ? saved.viewed ?? []
+        : [...(saved.viewed ?? []), saved.currentId],
+    );
     setLockedQuestions(saved.lockedQuestions ?? []);
     setLockedSections(saved.lockedSections ?? []);
     setDeadline(saved.deadline ?? 0);
@@ -484,6 +544,7 @@ export default function ExamSimulator() {
     setRemainingSeconds(EXAM_SECONDS);
     setScreen("exam");
     setCurrentId(examQuestions[0].id);
+    setViewed([examQuestions[0].id]);
     setCurrentSection(sectionOrder[0]);
     setReviewSection(sectionOrder[0]);
   }
@@ -527,6 +588,7 @@ export default function ExamSimulator() {
   }
 
   function toggleMarked() {
+    if (currentSection === "decision") return;
     setMarked((previous) =>
       previous.includes(currentId)
         ? previous.filter((id) => id !== currentId)
@@ -535,19 +597,24 @@ export default function ExamSimulator() {
   }
 
   function completeSection() {
-    if (reviewSection === "general") {
-      finishExam();
-      return;
-    }
     const sectionIndex = sectionOrder.indexOf(reviewSection);
     const nextSection = sectionOrder[sectionIndex + 1];
     setLockedSections((previous) =>
       previous.includes(reviewSection) ? previous : [...previous, reviewSection],
     );
+    if (!nextSection) {
+      finishExam();
+      return;
+    }
     setCurrentSection(nextSection);
     setReviewSection(nextSection);
     const first = examQuestions.find((question) => question.section === nextSection);
-    if (first) setCurrentId(first.id);
+    if (first) {
+      setCurrentId(first.id);
+      setViewed((previous) =>
+        previous.includes(first.id) ? previous : [...previous, first.id],
+      );
+    }
     setCaseTab(0);
     setCasePaneOpen(true);
     setScreen("exam");
@@ -574,6 +641,9 @@ export default function ExamSimulator() {
       );
     if (target) {
       setCurrentId(target.id);
+      setViewed((previous) =>
+        previous.includes(target.id) ? previous : [...previous, target.id],
+      );
       setCurrentSection(target.section);
       setReviewSection(target.section);
       setScreen("exam");
@@ -588,8 +658,8 @@ export default function ExamSimulator() {
   ).length;
   const scaledScore = Math.round((correctCount / examQuestions.length) * 1000);
   const passed = scaledScore >= 700;
-  const elapsedSeconds = startedAt
-    ? Math.max(0, Math.round(((finishedAt || Date.now()) - startedAt) / 1000))
+  const elapsedSeconds = startedAt && finishedAt
+    ? Math.max(0, Math.round((finishedAt - startedAt) / 1000))
     : 0;
 
   const domainScores = domains.map((domain) => {
@@ -641,12 +711,13 @@ export default function ExamSimulator() {
             <span className="eyebrow">Azure AI Apps and Agents Developer Associate</span>
             <h1>Practice the pressure.<br />Learn from every choice.</h1>
             <p>
-              A faithful, full-length AI-103 simulation built from the official April 2026
-              skills outline. Every attempt draws a new blueprint-balanced exam.
+              A best-effort, full-length AI-103 simulation built from the official April 2026
+              skills outline and public delivery guidance. Every attempt draws a new
+              blueprint-balanced exam.
             </p>
             <div className="blueprint-strip" aria-label="Exam blueprint summary">
               <div><strong>{questionPool.length}</strong><span>original-item pool</span></div>
-              <div><strong>120</strong><span>minutes</span></div>
+              <div><strong>100</strong><span>exam minutes</span></div>
               <div><strong>5</strong><span>skill domains</span></div>
               <div><strong>{caseStudyPool.length}</strong><span>case-study pool</span></div>
             </div>
@@ -658,7 +729,7 @@ export default function ExamSimulator() {
               Questions are original and blueprint-aligned. They are not copied from the live exam.
             </p>
             <button className="mode-card selected" onClick={() => startNew("timed")}>
-              <span className="mode-icon">120</span>
+              <span className="mode-icon">100</span>
               <span><strong>Full exam simulation</strong><small>Timed · strict section and break rules</small></span>
               <span className="mode-arrow">→</span>
             </button>
@@ -740,19 +811,25 @@ export default function ExamSimulator() {
             <div className="exam-code-box"><strong>AI-103</strong><span>{mode === "timed" ? "Timed" : "Study"}</span></div>
           </div>
           <div className="overview-stats">
-            <div><span>Time allowed</span><strong>{mode === "timed" ? "120 minutes" : "Untimed"}</strong></div>
+            <div><span>Exam clock</span><strong>{mode === "timed" ? "100 minutes" : "Untimed"}</strong></div>
             <div><span>Questions</span><strong>{EXAM_QUESTION_COUNT}</strong></div>
             <div><span>Sections</span><strong>3</strong></div>
             <div><span>Practice pass</span><strong>700 / 1000</strong></div>
           </div>
+          <p className="overview-note">
+            Microsoft lists a 120-minute appointment window for associate exams without labs;
+            the scored exam portion is 100 minutes. This simulator starts at the exam clock.
+          </p>
           <div className="overview-columns">
             <div>
               <h2>What to expect</h2>
               <ul className="check-list">
-                <li>Two case-study sections, followed by independent scenarios</li>
-                <li>Multiple choice, multiple response, build-list, matching, and Yes/No items</li>
-                <li>Mark-for-review, comments, a review screen, and an official-docs reference pane</li>
-                <li>Case-study answers cannot be revisited after you finish that section</li>
+                <li>43 independent scenarios, one five-question long-form case study, then three final decision items</li>
+                <li>30 single-choice, 7 multiple-response, 4 code-completion, 7 other interactive, and 3 decision items</li>
+                <li>The selected case study contains 15 paragraphs across several tabs, so budget time for careful reading</li>
+                <li>No lab section in this calibration; Microsoft can vary live exam forms</li>
+                <li>Case-study answers lock after that section; each final Yes/No answer locks as you advance</li>
+                <li>Microsoft Learn references are available during the run, and the exam clock continues while you use them</li>
                 {mode === "timed" && <li>The clock continues during breaks; viewed items lock when a break starts</li>}
               </ul>
             </div>
@@ -866,6 +943,8 @@ export default function ExamSimulator() {
   if (screen === "review") {
     const unanswered = reviewQuestions.filter((question) => !answerIsComplete(question, answers[question.id]));
     const markedInSection = reviewQuestions.filter((question) => marked.includes(question.id));
+    const nextSection = sectionOrder[sectionOrder.indexOf(reviewSection) + 1];
+    const submitsExam = !nextSection;
     return (
       <main className="exam-shell review-shell">
         <ExamHeader
@@ -881,7 +960,7 @@ export default function ExamSimulator() {
             <h1>{getSectionLabel(reviewSection)}</h1>
             <p>
               {reviewSection === "general"
-                ? "Review any item before submitting the practice exam."
+                ? "Review any item before continuing. You cannot return to these independent questions after leaving the section."
                 : "When you finish this section, you cannot return to these case-study questions."}
             </p>
           </div>
@@ -912,14 +991,20 @@ export default function ExamSimulator() {
             <button className="secondary-button" onClick={() => goToQuestion(currentId)} disabled={lockedQuestions.includes(currentId)}>
               Return to questions
             </button>
-            <button className="primary-button" onClick={() => setFinishDialog(reviewSection === "general" ? "exam" : "section")}>
-              {reviewSection === "general" ? "Finish exam" : "Finish section"}
+            <button className="primary-button" onClick={() => setFinishDialog(submitsExam ? "exam" : "section")}>
+              {submitsExam ? "Finish exam" : "Finish section"}
             </button>
           </div>
         </div>
         {finishDialog && (
           <ConfirmDialog
-            title={finishDialog === "exam" ? "Submit your exam?" : "Finish this case study?"}
+            title={
+              finishDialog === "exam"
+                ? "Submit your exam?"
+                : reviewSection === "general"
+                  ? "Finish the general section?"
+                  : "Finish this case study?"
+            }
             body={
               finishDialog === "exam"
                 ? `You have ${unanswered.length} unanswered question${unanswered.length === 1 ? "" : "s"} in this section. Submission ends the attempt.`
@@ -944,9 +1029,9 @@ export default function ExamSimulator() {
         answered={answeredCount}
       />
       <aside className="exam-tools" aria-label="Exam tools">
-        <button onClick={() => setBreakDialogOpen(true)}><span>Ⅱ</span><small>Take a break</small></button>
+        <button disabled={inDecisionSequence} title={inDecisionSequence ? "Unavailable during the final decision sequence" : undefined} onClick={() => setBreakDialogOpen(true)}><span>Ⅱ</span><small>Take a break</small></button>
         <button className={learnOpen ? "active" : ""} onClick={() => setLearnOpen((value) => !value)}><span>L</span><small>Microsoft Learn</small></button>
-        <button onClick={() => { setReviewSection(currentSection); setScreen("review"); }}><span>≡</span><small>Review</small></button>
+        <button disabled={inDecisionSequence} title={inDecisionSequence ? "These answers cannot be reviewed" : undefined} onClick={() => { setReviewSection(currentSection); setScreen("review"); }}><span>≡</span><small>Review</small></button>
         <button onClick={() => setHelpOpen(true)}><span>?</span><small>Help</small></button>
       </aside>
       <div className="exam-main">
@@ -979,6 +1064,12 @@ export default function ExamSimulator() {
               <span className="question-type">{questionTypeLabel(currentQuestion)}</span>
             </div>
             <article className="question-card">
+              {inDecisionSequence && (
+                <div className="decision-notice" role="note">
+                  Final decision sequence: choose Yes or No. Your answer locks when you select
+                  Next, and you cannot return to this item.
+                </div>
+              )}
               {currentQuestion.context && <div className="question-context">{currentQuestion.context}</div>}
               <h1>{currentQuestion.stem}</h1>
               <QuestionInput
@@ -992,9 +1083,11 @@ export default function ExamSimulator() {
               />
               {notice && <div className="inline-notice" role="status">{notice}</div>}
               <div className="question-extras">
-                <button className={marked.includes(currentId) ? "marked" : ""} onClick={toggleMarked}>
-                  <span>⚑</span>{marked.includes(currentId) ? "Marked for review" : "Mark for review"}
-                </button>
+                {!inDecisionSequence && (
+                  <button className={marked.includes(currentId) ? "marked" : ""} onClick={toggleMarked}>
+                    <span>⚑</span>{marked.includes(currentId) ? "Marked for review" : "Mark for review"}
+                  </button>
+                )}
                 <button onClick={() => setCommentOpen((value) => !value)}><span>▤</span>Comment on this item</button>
               </div>
               {commentOpen && (
@@ -1011,11 +1104,19 @@ export default function ExamSimulator() {
             </article>
           </div>
           <footer className="exam-navigation">
-            <button className="nav-button" onClick={goPrevious} disabled={currentSectionIndex <= 0}>← Previous <kbd>Alt+P</kbd></button>
+            <button className="nav-button" onClick={goPrevious} disabled={inDecisionSequence || currentSectionIndex <= 0}>← Previous <kbd>Alt+P</kbd></button>
             <div className="progress-dots" aria-label={`${answeredCount} of ${examQuestions.length} questions answered`}>
               <span style={{ width: `${(answeredCount / examQuestions.length) * 100}%` }} />
             </div>
-            <button className="nav-button next" onClick={goNext}>{currentSectionIndex === sectionQuestions.length - 1 ? "Review section" : "Next"} → <kbd>Alt+N</kbd></button>
+            <button className="nav-button next" onClick={goNext}>
+              {inDecisionSequence
+                ? currentSectionIndex === sectionQuestions.length - 1
+                  ? "Submit exam"
+                  : "Lock answer and continue"
+                : currentSectionIndex === sectionQuestions.length - 1
+                  ? "Review section"
+                  : "Next"} → <kbd>Alt+N</kbd>
+            </button>
           </footer>
         </section>
         {learnOpen && (
@@ -1028,7 +1129,7 @@ export default function ExamSimulator() {
               <label htmlFor="learn-search">Search this reference list</label>
               <input id="learn-search" value={learnQuery} onChange={(event) => setLearnQuery(event.target.value)} placeholder="Search agents, RAG, Speech…" />
             </div>
-            <div className="learn-note">The live exam opens learn.microsoft.com in this split pane. These links open the same official domain in a new tab.</div>
+            <div className="learn-note">The live exam opens learn.microsoft.com in a split pane, and the timer continues. These shortcuts open the same official domain in a new tab.</div>
             <div className="learn-results">
               {filteredLearnLinks.map((link) => (
                 <a href={link.url} target="_blank" rel="noreferrer" key={link.label}>
@@ -1095,14 +1196,77 @@ function QuestionInput({
 }: {
   question: Question;
   answer?: QuestionAnswer;
-  optionOrder?: string[];
+  optionOrder?: OptionOrder;
   onSetAnswer: (answer: QuestionAnswer) => void;
   onToggleMulti: (id: string, limit: number) => void;
   onMoveOrder: (question: Extract<Question, { type: "order" }>, index: number, delta: number) => void;
   onSetMapAnswer: (key: string, value: string) => void;
 }) {
+  if (question.type === "code") {
+    const map = answer && typeof answer === "object" && !Array.isArray(answer)
+      ? answer as Record<string, string>
+      : {};
+    const blankOrders = optionOrder && !Array.isArray(optionOrder) ? optionOrder : {};
+    const parts = question.code.split(/(\{\{[^}]+\}\})/g);
+
+    return (
+      <div className="code-answer">
+        <div className="code-language">{question.language === "azurecli" ? "Azure CLI" : question.language.toUpperCase()}</div>
+        <pre><code>
+          {parts.map((part, index) => {
+            const match = part.match(/^\{\{([^}]+)\}\}$/);
+            if (!match) return part;
+            const blank = question.blanks.find((item) => item.id === match[1]);
+            if (!blank) return part;
+            const options = orderByIds(blank.options, blankOrders[blank.id]);
+            return (
+              <select
+                aria-label={blank.label}
+                key={`${blank.id}-${index}`}
+                value={map[blank.id] ?? ""}
+                onChange={(event) => onSetMapAnswer(blank.id, event.target.value)}
+              >
+                <option value="">Select…</option>
+                {options.map((option) => (
+                  <option value={option.id} key={option.id}>{option.text}</option>
+                ))}
+              </select>
+            );
+          })}
+        </code></pre>
+        <p className="answer-instruction">Complete every dropdown in the code sample.</p>
+      </div>
+    );
+  }
+
+  if (question.type === "decision") {
+    return (
+      <fieldset className="answer-options decision-options">
+        <legend>Select one answer.</legend>
+        {([
+          { id: "yes", text: "Yes" },
+          { id: "no", text: "No" },
+        ] as const).map((option) => (
+          <label className={answer === option.id ? "selected" : ""} key={option.id}>
+            <input
+              type="radio"
+              name={`question-${question.id}`}
+              checked={answer === option.id}
+              onChange={() => onSetAnswer(option.id)}
+            />
+            <span className="choice-letter">{option.id === "yes" ? "Y" : "N"}</span>
+            <span>{option.text}</span>
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+
   if (question.type === "single") {
-    const orderedOptions = orderByIds(question.options, optionOrder);
+    const orderedOptions = orderByIds(
+      question.options,
+      Array.isArray(optionOrder) ? optionOrder : undefined,
+    );
     return (
       <fieldset className="answer-options">
         <legend>Select one answer.</legend>
@@ -1119,7 +1283,10 @@ function QuestionInput({
 
   if (question.type === "multi") {
     const selected = Array.isArray(answer) ? answer : [];
-    const orderedOptions = orderByIds(question.options, optionOrder);
+    const orderedOptions = orderByIds(
+      question.options,
+      Array.isArray(optionOrder) ? optionOrder : undefined,
+    );
     return (
       <fieldset className="answer-options multi-options">
         <legend>Select {question.selectCount} answers.</legend>
@@ -1160,7 +1327,10 @@ function QuestionInput({
 
   if (question.type === "match") {
     const map = answer && typeof answer === "object" && !Array.isArray(answer) ? answer as Record<string, string> : {};
-    const orderedChoices = orderByIds(question.choices, optionOrder);
+    const orderedChoices = orderByIds(
+      question.choices,
+      Array.isArray(optionOrder) ? optionOrder : undefined,
+    );
     return (
       <div className="match-answer">
         <p className="answer-instruction">Choose one match for each row.</p>
@@ -1229,7 +1399,9 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
           <li>Your selections save automatically in this browser.</li>
           <li>Use Review to locate unanswered and marked items.</li>
           <li>Finishing a case-study section permanently locks it.</li>
+          <li>The final three Yes/No items lock one at a time and cannot be reviewed.</li>
           <li>In the timed mode, starting a break locks questions you have already viewed.</li>
+          <li>The exam clock continues while Microsoft Learn references are open.</li>
           <li>Explanations appear only after you submit the full attempt.</li>
         </ul>
         <button className="primary-button" onClick={onClose}>Return to exam</button>

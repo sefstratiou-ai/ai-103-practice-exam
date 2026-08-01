@@ -4,21 +4,24 @@
 
 An unofficial, browser-based practice environment for **AI-103: Developing AI Apps and Agents on Azure**.
 
-The simulator provides a full 50-question attempt, timed and study modes, case studies, multiple item formats, answer explanations, and links to the Microsoft Learn documentation behind each question. It runs locally on Windows, macOS, and Linux and does not require an Azure subscription or external service credentials.
+The simulator provides a full 51-question attempt, timed and study modes, a case study, multiple item formats, a final no-review decision sequence, answer explanations, and links to the Microsoft Learn documentation behind each question. It runs locally on Windows, macOS, and Linux and does not require an Azure subscription or external service credential.
 
 > [!IMPORTANT]
 > This project is an independent learning tool. It is not affiliated with, endorsed by, or supplied by Microsoft. It contains original practice questions based on public documentation—not copied, recalled, leaked, or confidential exam content.
 
 ## Features
 
-- 95 original, blueprint-aligned questions
-- 50 questions selected for each attempt
-- Two case studies selected from a pool of five
-- 40 independent scenarios selected from a pool of 70
+- 130 original, blueprint-aligned questions
+- 51 questions selected for each attempt
+- One five-question, 15-paragraph case study selected from a pool of five
+- 43 independent scenarios selected from a pool of 102
+- Three final Yes/No decision items that lock as you advance
 - Fresh question and answer ordering for every new attempt
 - Exact blueprint-balanced domain coverage in every attempt
-- 120-minute timed simulation and an untimed study mode
-- Single choice, multiple response, build-list, matching, and Yes/No items
+- 100-minute exam clock and an untimed study mode
+- Exactly 14 interactive or special-format items per attempt (about 27%)
+- An exact per-run mix of 30 single-choice, 7 multiple-response, 4 code-completion, 7 other interactive, and 3 decision items
+- Python, JSON, HTTP/REST, and Azure CLI code-completion items, plus build-list, matching, matrix, and Yes/No formats
 - Mark for review, private notes, review screens, timed breaks, and section locks
 - Automatic progress saving in the browser
 - Answer explanations and direct links to supporting Microsoft Learn documentation
@@ -28,17 +31,29 @@ The simulator provides a full 50-question attempt, timed and study modes, case s
 
 ## Exam composition
 
-Every attempt contains 50 questions distributed as follows:
+Every attempt contains 51 questions distributed as follows:
 
 | Skills measured | Official range | Questions per attempt |
 | --- | ---: | ---: |
 | Plan and manage an Azure AI solution | 25–30% | 14 |
 | Implement generative AI and agentic solutions | 30–35% | 17 |
 | Implement computer vision solutions | 10–15% | 6 |
-| Implement text analysis solutions | 10–15% | 6 |
+| Implement text analysis solutions | 10–15% | 7 |
 | Implement information extraction solutions | 10–15% | 7 |
 
-The question selection and displayed answer order are seeded for each attempt. They remain stable while navigating or resuming an attempt, but a new attempt produces a different selection and ordering.
+The delivery order is 43 reviewable independent questions, one reviewable five-question case study, and a final three-item Yes/No sequence. Each case study contains 15 paragraphs (about 600 or more words) distributed across several tabs to reproduce the sustained reading and cross-referencing workload described in public delivery reports. In the final sequence, each answer becomes permanent when you advance and there is no section review screen.
+
+The question selection and displayed answer order are seeded for each attempt. They remain stable while navigating or resuming an attempt, but a new attempt produces a different selection and ordering. The selector holds both the domain distribution and the item-format mix constant, including four code-completion questions and 14 interactive or special-format items, rather than allowing either mix to vary widely between runs.
+
+## Fidelity calibration
+
+The simulator separates **content grounding** from **delivery calibration**:
+
+- Question content is original and grounded in the official AI-103 skills outline and Microsoft Learn. Every question links to the public documentation supporting its answer.
+- Delivery mechanics are calibrated from Microsoft's public exam-experience guidance and anonymized public experience reports. These signals inform timing, section flow, item-format mix, navigation locks, and interface behavior only.
+- Recalled live question wording and answer choices are never used. The project is not, and cannot claim to be, a one-to-one copy of a live exam form.
+
+The current calibration uses a 100-minute scored-exam clock inside Microsoft's 120-minute associate-exam appointment window, mostly standard multiple-choice items, approximately one quarter interactive/special formats, a long-form case study, code completion in Python/JSON/REST/Azure CLI, no lab section, Microsoft Learn access while the timer continues, and a final three-question no-review decision sequence. Microsoft can change the composition of individual live forms, so these are best-effort practice defaults rather than guarantees.
 
 ## Quick start
 
@@ -158,13 +173,21 @@ The bank is aligned to the Microsoft skills measured as of **April 16, 2026**. C
 Primary references:
 
 - [Official AI-103 study guide](https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-103)
+- [Official AI-103 training course](https://learn.microsoft.com/en-us/training/courses/ai-103t00)
 - [Azure AI Apps and Agents Developer Associate certification](https://learn.microsoft.com/en-us/credentials/certifications/azure-ai-apps-and-agents-developer-associate/)
-- [Microsoft Foundry documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/)
+- [Microsoft Foundry documentation](https://learn.microsoft.com/en-us/azure/foundry/)
 - [Azure AI Search documentation](https://learn.microsoft.com/en-us/azure/search/)
 - [Azure AI services documentation](https://learn.microsoft.com/en-us/azure/ai-services/)
 - [Microsoft certification exam duration and experience](https://learn.microsoft.com/en-us/credentials/support/exam-duration-exam-experience)
+- [Microsoft certification exam sandbox](https://learn.microsoft.com/en-us/credentials/certifications/exam-sandbox/)
+
+Experience-only calibration:
+
+- [Community review of a non-beta AI-103 delivery](https://www.reddit.com/r/AzureCertification/comments/1uchhri/review_of_just_passed_ai103_nonbeta/) — used only for aggregate delivery observations, never for recalled question content
 
 Each question also contains a direct source link for the capability being tested.
+
+The expanded coverage deliberately exercises areas that can be easy to under-practice in overview modules: Foundry resource creation and CLI operations, current RBAC roles and scopes, project connections, private networking, authentication and HTTP error diagnosis, Prompt Shields, image inpainting and mask requirements, video analysis, Speech REST and batch modes, Document Intelligence versus Content Understanding, and Azure AI Search schemas, vector profiles, analyzers, and immutable field attributes.
 
 ## Contributing questions
 
