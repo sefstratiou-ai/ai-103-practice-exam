@@ -32,7 +32,7 @@ type ExamMode = "timed" | "study";
 type QuestionAnswer = string | string[] | Record<string, string>;
 
 type SavedAttempt = {
-  version: 3;
+  version: 4;
   optionSeed: number;
   questionIds: number[];
   screen: ExamScreen;
@@ -196,6 +196,74 @@ function correctAnswerText(question: Question) {
     .join("\n");
 }
 
+function selectedAnswerText(question: Question, answer?: QuestionAnswer) {
+  if (!answerIsComplete(question, answer)) return "No complete answer submitted";
+  if (question.type === "single" || question.type === "decision") {
+    return optionText(question, answer as string);
+  }
+  if (question.type === "multi") {
+    return (answer as string[]).map((id) => optionText(question, id)).join(" · ");
+  }
+  if (question.type === "order") {
+    return (answer as string[])
+      .map((id, index) => `${index + 1}. ${optionText(question, id)}`)
+      .join("\n");
+  }
+  const map = answer as Record<string, string>;
+  if (question.type === "code") {
+    return question.blanks
+      .map((blank) => `${blank.label}: ${optionText(question, map[blank.id])}`)
+      .join("\n");
+  }
+  const rows = question.type === "match" ? question.prompts : question.rows;
+  return rows
+    .map((row) => `${row.text} → ${optionText(question, map[row.id])}`)
+    .join("\n");
+}
+
+function answerRationales(question: Question, answer?: QuestionAnswer) {
+  if (question.type === "single") {
+    return question.options
+      .filter((option) => option.id === answer || option.id === question.correct)
+      .map((option) => ({
+        label: `${option.id === answer ? "Your choice" : "Correct choice"}: ${option.text}`,
+        rationale: option.rationale ?? question.explanation,
+        correct: option.id === question.correct,
+      }));
+  }
+
+  if (question.type === "multi") {
+    const selected = new Set(Array.isArray(answer) ? answer : []);
+    const correct = new Set(question.correct);
+    return question.options
+      .filter((option) => selected.has(option.id) || correct.has(option.id))
+      .map((option) => ({
+        label: `${selected.has(option.id) ? "Selected" : "Missed"}: ${option.text}`,
+        rationale: option.rationale ?? question.explanation,
+        correct: correct.has(option.id),
+      }));
+  }
+
+  if (question.type === "code") {
+    const map = answer && typeof answer === "object" && !Array.isArray(answer)
+      ? answer as Record<string, string>
+      : {};
+    return question.blanks.flatMap((blank) => {
+      const selectedId = map[blank.id];
+      const correctId = question.correct[blank.id];
+      return blank.options
+        .filter((option) => option.id === selectedId || option.id === correctId)
+        .map((option) => ({
+          label: `${blank.label} · ${option.id === selectedId ? "Your choice" : "Correct choice"}: ${option.text}`,
+          rationale: option.rationale ?? question.explanation,
+          correct: option.id === correctId,
+        }));
+    });
+  }
+
+  return [];
+}
+
 function questionTypeLabel(question: Question) {
   switch (question.type) {
     case "single":
@@ -298,7 +366,7 @@ export default function ExamSimulator() {
 
   const attemptState = useMemo<SavedAttempt>(
     () => ({
-      version: 3,
+      version: 4,
       optionSeed,
       questionIds,
       screen,
@@ -351,13 +419,13 @@ export default function ExamSimulator() {
           questionIds?: number[];
         };
         if (
-          parsed.version === 3 &&
+          parsed.version === 4 &&
           parsed.screen !== "welcome" &&
           parsed.questionIds?.length === EXAM_QUESTION_COUNT
         ) {
           restoredAttempt = {
             ...parsed,
-            version: 3,
+            version: 4,
             questionIds: parsed.questionIds,
           };
         }
@@ -824,8 +892,8 @@ export default function ExamSimulator() {
             <div>
               <h2>What to expect</h2>
               <ul className="check-list">
-                <li>43 independent scenarios, one five-question long-form case study, then three final decision items</li>
-                <li>30 single-choice, 7 multiple-response, 4 code-completion, 7 other interactive, and 3 decision items</li>
+                <li>41 independent scenarios, one seven-question long-form case study, then three final decision items</li>
+                <li>27 single-choice, 7 multiple-response, 9 code-completion, 5 other interactive, and 3 decision items</li>
                 <li>The selected case study contains 15 paragraphs across several tabs, so budget time for careful reading</li>
                 <li>No lab section in this calibration; Microsoft can vary live exam forms</li>
                 <li>Case-study answers lock after that section; each final Yes/No answer locks as you advance</li>
@@ -918,8 +986,20 @@ export default function ExamSimulator() {
                     </button>
                     {expanded && (
                       <div className="result-detail">
+                        <div><span>Your answer</span><pre>{selectedAnswerText(question, answers[question.id])}</pre></div>
                         <div><span>Correct answer</span><pre>{correctAnswerText(question)}</pre></div>
-                        <div><span>Why</span><p>{question.explanation}</p></div>
+                        {answerRationales(question, answers[question.id]).length > 0 && (
+                          <div className="answer-rationales">
+                            <span>Choice analysis</span>
+                            {answerRationales(question, answers[question.id]).map((item, index) => (
+                              <div className={item.correct ? "rationale correct" : "rationale incorrect"} key={`${item.label}-${index}`}>
+                                <strong>{item.label}</strong>
+                                <p>{item.rationale}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div><span>Explanation</span><p>{question.explanation}</p></div>
                         <div className="result-meta">
                           <span>{question.objective}</span>
                           <a href={question.source.url} target="_blank" rel="noreferrer">Open {question.source.label} ↗</a>

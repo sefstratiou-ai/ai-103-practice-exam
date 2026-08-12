@@ -99,6 +99,20 @@ test("different seeds expose broad variety from the complete pool", () => {
         `seed ${seed} should contain ${target} ${format} questions`,
       );
     }
+    const codeQuestions = selection.questions.filter(
+      (question): question is Extract<(typeof selection.questions)[number], { type: "code" }> =>
+        question.type === "code",
+    );
+    assert.deepEqual(
+      new Set(codeQuestions.map((question) => question.domain)),
+      new Set(domains),
+      `seed ${seed} should include code from all five domains`,
+    );
+    assert.deepEqual(
+      new Set(codeQuestions.map((question) => question.language)),
+      new Set(["python", "json", "http", "azurecli"]),
+      `seed ${seed} should include all four code languages`,
+    );
     selection.questions.forEach((question) => seenQuestionIds.add(question.id));
     selection.caseStudies.forEach((caseStudy) => seenCaseStudyIds.add(caseStudy.id));
     signatures.add(selection.questions.map((question) => question.id).join(","));

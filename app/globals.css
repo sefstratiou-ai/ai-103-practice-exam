@@ -1254,6 +1254,13 @@ textarea:focus-visible {
 .result-detail > div > span { color: var(--muted); display: block; font-size: 0.68rem; font-weight: 700; margin: 12px 0 6px; text-transform: uppercase; }
 .result-detail pre { font-family: inherit; font-size: 0.87rem; line-height: 1.55; margin: 0; white-space: pre-wrap; }
 .result-detail p { line-height: 1.6; margin: 0; }
+.answer-rationales { margin-top: 18px; }
+.answer-rationales > span { margin-bottom: 9px !important; }
+.rationale { background: #fff; border-left: 3px solid var(--line); margin: 8px 0; padding: 12px 14px; }
+.rationale.correct { border-left-color: var(--green); }
+.rationale.incorrect { border-left-color: var(--red); }
+.rationale strong { display: block; font-size: 0.79rem; line-height: 1.45; margin-bottom: 4px; }
+.rationale p { color: var(--muted); font-size: 0.8rem; }
 .result-meta { align-items: center; border-top: 1px solid var(--line); display: flex; justify-content: space-between; margin-top: 18px; padding-top: 16px; }
 .result-meta > span { margin: 0 !important; text-transform: none !important; }
 .result-meta a { color: var(--blue); font-size: 0.78rem; font-weight: 700; text-decoration: none; }

@@ -10,7 +10,7 @@ import { mixSeed, shuffleWithSeed } from "./optionShuffle";
 
 export const EXAM_QUESTION_COUNT = 51;
 export const CASE_STUDY_COUNT = 1;
-export const QUESTIONS_PER_CASE_STUDY = 5;
+export const QUESTIONS_PER_CASE_STUDY = 7;
 export const DECISION_QUESTION_COUNT = 3;
 export const GENERAL_QUESTION_COUNT =
   EXAM_QUESTION_COUNT -
@@ -24,10 +24,10 @@ export type QuestionFormatGroup =
 type SelectableFormatGroup = (typeof selectableFormatGroups)[number];
 
 export const formatQuestionTargets: Record<QuestionFormatGroup, number> = {
-  single: 30,
+  single: 27,
   multi: 7,
-  code: 4,
-  interactive: 7,
+  code: 9,
+  interactive: 5,
   decision: 3,
 };
 
@@ -206,6 +206,14 @@ export function createExamSelection(
       ).length,
     ]),
   ) as Record<QuestionFormatGroup, number>;
+  const fixedCodeCounts = Object.fromEntries(
+    domains.map((domain) => [
+      domain,
+      fixedQuestions.filter(
+        (question) => question.domain === domain && question.type === "code",
+      ).length,
+    ]),
+  ) as Record<Domain, number>;
   const remainingFormatTargets = Object.fromEntries(
     selectableFormatGroups.map((format) => [
       format,
@@ -295,6 +303,7 @@ export function createExamSelection(
           code <= Math.min(required - single - multi, pools.code.length, remaining.code);
           code += 1
         ) {
+          if (code < Math.max(0, 1 - fixedCodeCounts[domain])) continue;
           const interactive = required - single - multi - code;
           if (
             interactive < 0 ||
@@ -348,14 +357,103 @@ export function createExamSelection(
     );
   }
 
-  const selectedGeneralQuestions = domains.flatMap((domain, domainIndex) =>
-    selectableFormatGroups.flatMap((format, formatIndex) =>
-      shuffleWithSeed(
-        generalPools[domain][format],
-        mixSeed(attemptSeed, 54_000 + domainIndex * 100 + formatIndex),
-      ).slice(0, formatAllocation[domainIndex][format]),
-    ),
+  type CodeQuestion = Extract<Question, { type: "code" }>;
+  type CodeLanguage = CodeQuestion["language"];
+  const codeLanguages: CodeLanguage[] = ["python", "json", "http", "azurecli"];
+
+  function combinations<T>(items: readonly T[], count: number): T[][] {
+    if (count === 0) return [[]];
+    if (items.length < count) return [];
+    const result: T[][] = [];
+    for (let index = 0; index <= items.length - count; index += 1) {
+      for (const tail of combinations(items.slice(index + 1), count - 1)) {
+        result.push([items[index], ...tail]);
+      }
+    }
+    return result;
+  }
+
+  const selectedFixedCode = fixedQuestions.filter(
+    (question): question is CodeQuestion => question.type === "code",
   );
+  const initialLanguages = new Set(selectedFixedCode.map((question) => question.language));
+
+  function chooseCodeQuestions(
+    domainIndex: number,
+    selected: CodeQuestion[],
+    languages: Set<CodeLanguage>,
+  ): CodeQuestion[] | undefined {
+    if (domainIndex === domains.length) {
+      return codeLanguages.every((language) => languages.has(language))
+        ? selected
+        : undefined;
+    }
+
+    const domain = domains[domainIndex];
+    const required = formatAllocation[domainIndex].code;
+    const pool = generalPools[domain].code.filter(
+      (question): question is CodeQuestion => question.type === "code",
+    );
+    const candidates = shuffleWithSeed(
+      combinations(pool, required),
+      mixSeed(attemptSeed, 55_000 + domainIndex),
+    );
+
+    for (const candidate of candidates) {
+      const nextLanguages = new Set(languages);
+      candidate.forEach((question) => nextLanguages.add(question.language));
+
+      const futureDomains = domains.slice(domainIndex + 1);
+      const canStillCoverLanguages = codeLanguages.every(
+        (language) =>
+          nextLanguages.has(language) ||
+          futureDomains.some((futureDomain) => {
+            const futureIndex = domains.indexOf(futureDomain);
+            return (
+              formatAllocation[futureIndex].code > 0 &&
+              generalPools[futureDomain].code.some(
+                (question) => question.type === "code" && question.language === language,
+              )
+            );
+          }),
+      );
+      if (!canStillCoverLanguages) continue;
+
+      const tail = chooseCodeQuestions(
+        domainIndex + 1,
+        [...selected, ...candidate],
+        nextLanguages,
+      );
+      if (tail) return tail;
+    }
+
+    return undefined;
+  }
+
+  const selectedGeneralCodeQuestions = chooseCodeQuestions(
+    0,
+    [],
+    initialLanguages,
+  );
+  if (!selectedGeneralCodeQuestions) {
+    throw new Error(
+      "Unable to include every code language while satisfying the domain and format targets.",
+    );
+  }
+
+  const selectedGeneralQuestions = [
+    ...selectedGeneralCodeQuestions,
+    ...domains.flatMap((domain, domainIndex) =>
+      selectableFormatGroups
+        .filter((format) => format !== "code")
+        .flatMap((format, formatIndex) =>
+          shuffleWithSeed(
+            generalPools[domain][format],
+            mixSeed(attemptSeed, 54_000 + domainIndex * 100 + formatIndex),
+          ).slice(0, formatAllocation[domainIndex][format]),
+        ),
+    ),
+  ];
 
   if (selectedGeneralQuestions.length !== GENERAL_QUESTION_COUNT) {
     throw new Error(

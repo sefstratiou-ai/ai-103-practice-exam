@@ -1,3 +1,5 @@
+import { distractorTextOverrides } from "./questionEnhancements";
+
 export const domains = [
   "Plan and manage an Azure AI solution",
   "Implement generative AI and agentic solutions",
@@ -18,7 +20,7 @@ export type CaseStudyId = (typeof caseStudyIds)[number];
 export type SectionId = CaseStudyId | "general" | "decision";
 export type Difficulty = "Intermediate" | "Advanced";
 
-type Option = { id: string; text: string };
+type Option = { id: string; text: string; rationale?: string };
 type Source = { label: string; url: string };
 
 type QuestionBase = {
@@ -507,7 +509,7 @@ export const caseStudies: CaseStudy[] = [
   },
 ];
 
-export const questions: Question[] = [
+const questionDrafts: Question[] = [
   {
     id: 1,
     section: "northwind",
@@ -3245,32 +3247,1103 @@ while True:
     explanation: "A typed field schema supplies the machine contract, modality-appropriate extraction preserves useful content, and confidence plus grounding supports reviewer verification. Discarding evidence or auto-approving uncertain fields undermines reliable automation.",
     source: sources.content,
   },
+  {
+    id: 131,
+    section: "northwind",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Preserve service history with conversations and persisted agents",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "Northwind uses a persisted support agent and must keep each customer's follow-up questions in one durable conversation. Complete the Python code so the second response uses the same conversation and agent definition.",
+    code: `conversation = openai.{{conversation_method}}(
+    items=[{
+        "type": "message",
+        "role": "user",
+        "content": "Summarize ticket NW-2048",
+    }]
+)
+
+response = openai.responses.create(
+    input="Which policy supports that answer?",
+    {{history_parameter}}=conversation.id,
+    extra_body={
+        "agent_reference": {
+            "name": support_agent,
+            "type": "{{reference_type}}",
+        }
+    },
+)`,
+    blanks: [
+      {
+        id: "conversation_method",
+        label: "Conversation creation method",
+        options: [
+          { id: "create", text: "conversations.create", rationale: "Correct. The conversations client creates the durable container before responses are added to it." },
+          { id: "responses", text: "responses.create", rationale: "This creates a response, not the conversation container required by the following call." },
+          { id: "retrieve", text: "conversations.retrieve", rationale: "Retrieve requires an existing conversation identifier; none exists at this point." },
+        ],
+      },
+      {
+        id: "history_parameter",
+        label: "History parameter",
+        options: [
+          { id: "conversation", text: "conversation", rationale: "Correct. Passing the conversation ID appends the response to the durable conversation." },
+          { id: "previous", text: "previous_response_id", rationale: "A previous response can chain turns, but the requirement explicitly uses the durable conversation that was just created." },
+          { id: "store", text: "store", rationale: "The store flag doesn't associate the request with this conversation ID." },
+        ],
+      },
+      {
+        id: "reference_type",
+        label: "Agent reference type",
+        options: [
+          { id: "agent", text: "agent_reference", rationale: "Correct. A persisted Foundry agent is invoked through an agent_reference object." },
+          { id: "conversation", text: "conversation_reference", rationale: "Conversation identity is supplied separately and is not an agent-reference type." },
+          { id: "tool", text: "tool_reference", rationale: "A tool reference would not select the persisted agent definition." },
+        ],
+      },
+    ],
+    correct: { conversation_method: "create", history_parameter: "conversation", reference_type: "agent" },
+    explanation: "Foundry conversations preserve multi-turn items. A response joins the conversation through the conversation parameter, while extra_body.agent_reference selects the named persisted agent.",
+    source: sources.agents,
+  },
+  {
+    id: 132,
+    section: "northwind",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Assign least-privilege identities across Foundry and Search",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Northwind separates deployment automation from the running support application. The application only invokes the support agent and reads the approved policy index. Which production assignment best satisfies least privilege?",
+    options: [
+      { id: "a", text: "Give the application Foundry Agent Consumer at the agent scope and Search Index Data Reader on the policy index or search service", rationale: "Correct. These data-plane roles cover invocation and query access without granting agent authoring or resource administration." },
+      { id: "b", text: "Give the application Foundry User at the resource scope and Search Service Contributor on the search service", rationale: "Both roles are broader than a runtime caller needs and include development or service-management capabilities." },
+      { id: "c", text: "Give the application Reader on the Foundry project and Search Index Data Contributor on the policy index", rationale: "Reader doesn't grant agent invocation, while Data Contributor unnecessarily permits index writes." },
+      { id: "d", text: "Give the application Cognitive Services Contributor and Search Service Contributor at the resource-group scope", rationale: "These control-plane assignments grant broad management access and are not the least-privilege runtime combination." },
+    ],
+    correct: "a",
+    explanation: "A runtime identity needs only agent endpoint interaction and index query permissions. Foundry Agent Consumer plus Search Index Data Reader provides those data-plane capabilities at narrow scopes.",
+    source: sources.foundryRbac,
+  },
+  {
+    id: 133,
+    section: "alpine",
+    domain: "Implement computer vision solutions",
+    objective: "Construct a multimodal Responses request",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "Alpine must ask a vision-capable deployment for evidence-based alt text from an image supplied as a data URL. Complete the content items in the Responses request.",
+    code: `{
+  "model": "vision-deployment",
+  "input": [{
+    "role": "user",
+    "content": [
+      {
+        "type": "{{instruction_type}}",
+        "text": "Write concise alt text. Mention only visible evidence."
+      },
+      {
+        "type": "{{image_type}}",
+        "image_url": "data:image/png;base64,iVBORw0...",
+        "detail": "{{detail_level}}"
+      }
+    ]
+  }]
+}`,
+    blanks: [
+      {
+        id: "instruction_type",
+        label: "Instruction content type",
+        options: [
+          { id: "input_text", text: "input_text", rationale: "Correct. User text in a Responses multimodal content array is represented as input_text." },
+          { id: "output_text", text: "output_text", rationale: "output_text describes generated response content, not user-provided instructions." },
+          { id: "input_file", text: "input_file", rationale: "input_file represents a file input and doesn't match the text field in this object." },
+        ],
+      },
+      {
+        id: "image_type",
+        label: "Image content type",
+        options: [
+          { id: "input_image", text: "input_image", rationale: "Correct. input_image identifies an image supplied to the model." },
+          { id: "image_generation_call", text: "image_generation_call", rationale: "That identifies an image-generation tool result rather than an image input." },
+          { id: "computer_vision", text: "computer_vision", rationale: "This isn't a Responses content-item type." },
+        ],
+      },
+      {
+        id: "detail_level",
+        label: "Image detail level",
+        options: [
+          { id: "high", text: "high", rationale: "Correct. High detail is appropriate when small labels and visual evidence affect the answer." },
+          { id: "auto", text: "auto", rationale: "Auto is valid, but it doesn't explicitly request the detail needed for Alpine's small visual features." },
+          { id: "low", text: "low", rationale: "Low detail reduces image processing and can omit small evidence that the requirement depends on." },
+        ],
+      },
+    ],
+    correct: { instruction_type: "input_text", image_type: "input_image", detail_level: "high" },
+    explanation: "A multimodal Responses message combines input_text and input_image content. High detail is the deliberate choice when the answer depends on small labels or visual evidence.",
+    source: sources.visionLanguage,
+  },
+  {
+    id: 134,
+    section: "alpine",
+    domain: "Implement information extraction solutions",
+    objective: "Choose an analyzer for reusable multimodal campaign extraction",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Alpine receives visually varied campaign PDFs and images. It needs one reusable definition with natural-language field descriptions, Markdown content, and source-grounded values without first labeling examples. Which starting point is most appropriate?",
+    options: [
+      { id: "a", text: "A custom Content Understanding analyzer with a field schema and detailed output", rationale: "Correct. It supports inferred schema fields, multimodal content, Markdown, and grounding without labeled model training." },
+      { id: "b", text: "A Document Intelligence custom neural model trained from labeled campaign examples", rationale: "A custom neural model can extract labeled document fields, but it requires training data and doesn't provide the requested single multimodal analyzer starting point." },
+      { id: "c", text: "A Document Intelligence prebuilt layout model followed by application-written field rules", rationale: "Layout supplies OCR and structure, but the application would still need to implement the inferred business-field extraction itself." },
+      { id: "d", text: "An Azure AI Search indexer using only the OCR and Split skills", rationale: "The skillset can prepare searchable text, but it doesn't define or infer Alpine's structured campaign fields." },
+    ],
+    correct: "a",
+    explanation: "Content Understanding is the best fit for varied multimodal inputs and fields described in natural language. Detailed output preserves the evidence needed for review.",
+    source: sources.documentToolChoice,
+  },
+  {
+    id: 135,
+    section: "fabrikam",
+    domain: "Implement text analysis solutions",
+    objective: "Submit stored recordings for batch transcription",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "Fabrikam's recordings are already in Blob Storage and must be transcribed asynchronously with speaker separation. Complete the batch transcription request.",
+    code: `POST {speech-endpoint}/speechtotext/transcriptions:submit?api-version={{api_version}}
+Ocp-Apim-Subscription-Key: {speech-key}
+Content-Type: application/json
+
+{
+  "displayName": "Nightly claims archive",
+  "locale": "en-US",
+  "{{content_property}}": ["https://storage.example/calls/claim-2048.wav"],
+  "properties": {
+    "{{speaker_property}}": true,
+    "wordLevelTimestampsEnabled": true,
+    "timeToLiveHours": 48
+  }
+}`,
+    blanks: [
+      {
+        id: "api_version",
+        label: "Batch API version",
+        options: [
+          { id: "v2025", text: "2025-10-15", rationale: "Correct. 2025-10-15 is the latest generally available Speech-to-text REST API version." },
+          { id: "v2024", text: "2024-11-15", rationale: "This version introduced the newer submit operation, but it is not the latest generally available version requested here." },
+          { id: "v3_2", text: "v3.2", rationale: "The v3.2 REST API was retired on March 31, 2026 and should not be used for a new implementation." },
+        ],
+      },
+      {
+        id: "content_property",
+        label: "Stored audio URL collection",
+        options: [
+          { id: "content_urls", text: "contentUrls", rationale: "Correct. contentUrls supplies the Blob URLs that a batch job processes." },
+          { id: "audio_urls", text: "audioUrls", rationale: "This plausible name isn't the batch transcription contract property." },
+          { id: "source_urls", text: "sourceUrls", rationale: "Document Translation uses source concepts, but this isn't the Speech batch property." },
+        ],
+      },
+      {
+        id: "speaker_property",
+        label: "Speaker separation property",
+        options: [
+          { id: "diarization", text: "diarizationEnabled", rationale: "Correct. Diarization identifies and separates speakers in the transcript." },
+          { id: "channels", text: "channelsEnabled", rationale: "Audio channels and speaker diarization are different concepts, and this isn't the required property." },
+          { id: "profanity", text: "profanityFilterMode", rationale: "Profanity filtering changes text handling, not speaker separation." },
+        ],
+      },
+    ],
+    correct: { api_version: "v2025", content_property: "content_urls", speaker_property: "diarization" },
+    explanation: "Speech batch transcription accepts stored audio through contentUrls. The 2025-10-15 submit operation creates an asynchronous job, diarizationEnabled requests speaker separation, and timeToLiveHours controls completed-job retention.",
+    source: sources.batchSpeech,
+  },
+  {
+    id: 136,
+    section: "fabrikam",
+    domain: "Implement information extraction solutions",
+    objective: "Route standardized and varied evidence to appropriate extractors",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Fabrikam can identify a subset of uploads as standard vendor invoices before analysis. For that subset it needs invoice totals, dates, vendors, and line items with the least custom configuration. What should the routing workflow invoke first?",
+    options: [
+      { id: "a", text: "The Document Intelligence prebuilt invoice model", rationale: "Correct. It directly extracts common invoice fields and line items without custom training." },
+      { id: "b", text: "A Document Intelligence custom neural extraction model", rationale: "A custom neural model is justified when labeled examples and nonstandard target fields require training; it isn't the least-configured starting point here." },
+      { id: "c", text: "A custom Content Understanding analyzer for every standard invoice", rationale: "Content Understanding can handle invoices, but the supported prebuilt invoice model is more direct for this standardized subset." },
+      { id: "d", text: "The Document Intelligence prebuilt layout model plus handwritten parsing rules", rationale: "Layout returns text and structure, but handwritten rules duplicate field extraction already provided by the invoice model." },
+    ],
+    correct: "a",
+    explanation: "The prebuilt invoice model is the most direct supported option for standard invoices. Fabrikam can continue routing variable, multimodal claim packages to Content Understanding.",
+    source: sources.documentToolChoice,
+  },
+  {
+    id: 137,
+    section: "contoso",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Return validated function results to the Responses API",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "Contoso validates a requested work-order operation outside the model. Complete the function-call loop so the application dispatches the arguments and returns the correlated result to the model.",
+    code: `for item in response.output:
+    if item.type == "{{call_type}}":
+        arguments = json.loads(item.{{arguments_property}})
+        result = dispatch_validated(item.name, arguments)
+        next_input.append({
+            "type": "{{output_type}}",
+            "call_id": item.call_id,
+            "output": json.dumps(result),
+        })`,
+    blanks: [
+      {
+        id: "call_type",
+        label: "Function call output item type",
+        options: [
+          { id: "function_call", text: "function_call", rationale: "Correct. Function requests appear as function_call output items." },
+          { id: "tool_call", text: "tool_call", rationale: "This generic-looking label isn't the Responses function-call item type." },
+          { id: "function_call_output", text: "function_call_output", rationale: "That type is used when the application returns a function result, not when reading the request." },
+        ],
+      },
+      {
+        id: "arguments_property",
+        label: "Serialized arguments property",
+        options: [
+          { id: "arguments", text: "arguments", rationale: "Correct. The function-call item carries its JSON arguments in the arguments property." },
+          { id: "input", text: "input", rationale: "Input is used on response requests, not as the function-call argument property." },
+          { id: "parameters", text: "parameters", rationale: "Parameters belongs to the tool schema; the emitted call uses arguments." },
+        ],
+      },
+      {
+        id: "output_type",
+        label: "Function result item type",
+        options: [
+          { id: "function_call_output", text: "function_call_output", rationale: "Correct. The returned result uses function_call_output and the original call_id." },
+          { id: "function_call", text: "function_call", rationale: "That would describe another request rather than the application's result." },
+          { id: "tool_result", text: "tool_result", rationale: "This isn't the Responses item type used to return function output." },
+        ],
+      },
+    ],
+    correct: { call_type: "function_call", arguments_property: "arguments", output_type: "function_call_output" },
+    explanation: "The application reads function_call items, validates and executes their arguments, and sends a function_call_output item with the same call_id so the model can correlate the result.",
+    source: sources.responsesApi,
+  },
+  {
+    id: 138,
+    section: "contoso",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Share connections without broadening project administration",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Contoso wants regional Foundry projects to reuse one approved Search connection. Regional developers must build agents in their own project but must not edit the shared connection or administer other projects. Which design best meets both requirements?",
+    options: [
+      { id: "a", text: "Create the reusable connection at the Foundry resource boundary, give developers project-scoped Foundry User, and grant only required Search data access", rationale: "Correct. The shared resource connection remains centrally managed while project and Search permissions stay narrow." },
+      { id: "b", text: "Create a project connection in every region and give each developer Contributor on the Foundry resource", rationale: "Duplicating connections is possible, but Contributor at the resource boundary grants broader management access than required." },
+      { id: "c", text: "Create one resource connection and give every regional developer Foundry Owner so the connection resolves", rationale: "Foundry Owner would let regional users administer unrelated projects and shared configuration." },
+      { id: "d", text: "Store the Search administrator key in each project connection and give developers Reader on their project", rationale: "Reader doesn't permit agent development, and distributing an administrator key defeats keyless least privilege." },
+    ],
+    correct: "a",
+    explanation: "A resource-level connection supports intentional reuse. Foundry User at each project plus the minimum target-service data role separates development access from shared connection administration.",
+    source: sources.foundryConnections,
+  },
+  {
+    id: 139,
+    section: "woodgrove",
+    domain: "Implement computer vision solutions",
+    objective: "Complete a high-fidelity masked image edit",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "Woodgrove must replace only a masked background, preserve the supplied product closely, and return an asset that supports transparency. Complete the multipart image request.",
+    code: `POST {endpoint}/openai/deployments/{deployment}/images/{{operation}}?api-version=2025-04-01-preview
+Api-Key: {key}
+Content-Type: multipart/form-data
+
+prompt="Replace only the background with a winter scene"
+image=@approved-product.png
+mask=@background-mask.png
+input_fidelity={{fidelity}}
+output_format={{format}}`,
+    blanks: [
+      {
+        id: "operation",
+        label: "Image operation",
+        options: [
+          { id: "edits", text: "edits", rationale: "Correct. The request supplies a source image and mask, so it uses the image edits operation." },
+          { id: "generations", text: "generations", rationale: "Generation starts from a prompt and doesn't apply this masked source-image edit contract." },
+          { id: "variations", text: "variations", rationale: "Variations don't provide the bounded masked edit required here." },
+        ],
+      },
+      {
+        id: "fidelity",
+        label: "Input preservation setting",
+        options: [
+          { id: "high", text: "high", rationale: "Correct. High input fidelity emphasizes preservation of details from the approved product image." },
+          { id: "low", text: "low", rationale: "Low fidelity can change source details that Woodgrove is required to preserve." },
+          { id: "auto", text: "auto", rationale: "Auto leaves the preservation tradeoff to the service instead of explicitly meeting the high-fidelity requirement." },
+        ],
+      },
+      {
+        id: "format",
+        label: "Transparent-capable output format",
+        options: [
+          { id: "png", text: "png", rationale: "Correct. PNG supports an alpha channel for transparent output." },
+          { id: "jpeg", text: "jpeg", rationale: "JPEG does not provide the alpha channel required for transparent output." },
+          { id: "bmp", text: "bmp", rationale: "BMP isn't the documented transparent output choice for this workflow." },
+        ],
+      },
+    ],
+    correct: { operation: "edits", fidelity: "high", format: "png" },
+    explanation: "Masked source-image changes use the edits operation. High input fidelity preserves the approved product, and PNG is required when downstream compositing needs transparency.",
+    source: sources.imageGeneration,
+  },
+  {
+    id: 140,
+    section: "woodgrove",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Separate model critique from publication authorization",
+    difficulty: "Advanced",
+    type: "single",
+    stem: "Woodgrove adds a critic agent that can reject drafts and request one revision. Publication still requires designer and compliance approval. Which workflow preserves that authorization boundary?",
+    options: [
+      { id: "a", text: "Let the critic evaluate and request a bounded revision, then pause before the publishing tool until both human approvals are recorded", rationale: "Correct. Model critique improves the draft but never becomes authorization for the consequential tool call." },
+      { id: "b", text: "Let the critic call the publishing tool whenever every automated evaluator exceeds its threshold", rationale: "Evaluator thresholds are useful release evidence but don't replace the explicit human approval requirement." },
+      { id: "c", text: "Let the creator and critic approve each other after two revision rounds, then publish automatically", rationale: "Mutual model approval is still self-authorization and bypasses both required reviewers." },
+      { id: "d", text: "Let the publication agent infer approval from positive reviewer comments stored in the conversation", rationale: "Approval must be an explicit recorded control event, not an inference from natural-language context." },
+    ],
+    correct: "a",
+    explanation: "Reflection and critique can improve quality, but they must be bounded and separated from authorization. The publishing tool remains blocked until explicit human approvals are recorded.",
+    source: sources.workflow,
+  },
+  {
+    id: 141,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Configure Microsoft Entra authentication for an OpenAI client",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "A Python service calls the project-scoped OpenAI endpoint without a key. Complete the token provider and client configuration.",
+    code: `credential = DefaultAzureCredential()
+token_provider = get_bearer_token_provider(
+    credential,
+    "{{token_scope}}",
+)
+
+client = OpenAI(
+    base_url=f"{project_endpoint}/{{api_path}}/",
+    {{credential_parameter}}=token_provider,
+)`,
+    blanks: [
+      {
+        id: "token_scope",
+        label: "Microsoft Entra token scope",
+        options: [
+          { id: "ai", text: "https://ai.azure.com/.default", rationale: "Correct. Foundry project data-plane calls use the ai.azure.com default scope." },
+          { id: "management", text: "https://management.azure.com/.default", rationale: "The ARM audience is for control-plane resource management, not the project inference endpoint." },
+          { id: "storage", text: "https://storage.azure.com/.default", rationale: "The Storage audience produces a token for Blob data, not Foundry." },
+        ],
+      },
+      {
+        id: "api_path",
+        label: "Project OpenAI path",
+        options: [
+          { id: "openai_v1", text: "openai/v1", rationale: "Correct. The project-scoped OpenAI-compatible API is exposed under /openai/v1/." },
+          { id: "agents_v1", text: "agents/v1", rationale: "Agent administration uses a different API surface; it isn't the OpenAI client base path." },
+          { id: "models_v1", text: "models/v1", rationale: "This isn't the documented OpenAI-compatible project path." },
+        ],
+      },
+      {
+        id: "credential_parameter",
+        label: "OpenAI credential parameter",
+        options: [
+          { id: "api_key", text: "api_key", rationale: "Correct. The OpenAI client accepts the bearer-token provider through api_key." },
+          { id: "credential", text: "credential", rationale: "AIProjectClient uses credential, but the OpenAI client constructor shown here doesn't." },
+          { id: "token_provider", text: "token_provider", rationale: "The variable is a token provider, but token_provider isn't the constructor parameter name." },
+        ],
+      },
+    ],
+    correct: { token_scope: "ai", api_path: "openai_v1", credential_parameter: "api_key" },
+    explanation: "The bearer-token provider requests the Foundry data-plane audience. The OpenAI client points to the project /openai/v1/ path and receives that provider through api_key.",
+    source: sources.structuredOutputs,
+  },
+  {
+    id: 142,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Assign quota visibility at subscription scope with Azure CLI",
+    difficulty: "Advanced",
+    type: "code",
+    language: "azurecli",
+    stem: "An operations analyst must view model quota for the subscription but must not create deployments or change resources. Complete the least-privilege role assignment.",
+    code: `az role assignment create \
+  --assignee-object-id "$analystObjectId" \
+  --assignee-principal-type User \
+  --role "{{role_name}}" \
+  --scope "{{assignment_scope}}"`,
+    blanks: [
+      {
+        id: "role_name",
+        label: "Quota visibility role",
+        options: [
+          { id: "usages_reader", text: "Cognitive Services Usages Reader", rationale: "Correct. This role provides the documented quota and usage visibility without deployment management." },
+          { id: "openai_user", text: "Cognitive Services OpenAI User", rationale: "This role supports inference access and isn't the narrow quota-viewing role." },
+          { id: "contributor", text: "Cognitive Services Contributor", rationale: "Contributor grants resource-management capabilities beyond viewing quota." },
+        ],
+      },
+      {
+        id: "assignment_scope",
+        label: "Role assignment scope",
+        options: [
+          { id: "subscription", text: "/subscriptions/$subscriptionId", rationale: "Correct. Quota pools are viewed across the subscription, model, and region, so the reader role is assigned at subscription scope." },
+          { id: "project", text: "$projectResourceId", rationale: "A project scope is too narrow for subscription-level quota visibility." },
+          { id: "deployment", text: "$deploymentResourceId", rationale: "A deployment scope doesn't expose the subscription quota pool the analyst must inspect." },
+        ],
+      },
+    ],
+    correct: { role_name: "usages_reader", assignment_scope: "subscription" },
+    explanation: "Cognitive Services Usages Reader at subscription scope is the narrow documented assignment for viewing Azure OpenAI quota without resource or deployment administration.",
+    source: sources.quota,
+  },
+  {
+    id: 143,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Handle Azure SDK throttling with bounded retries",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "A workload performs an idempotent read and uses an Azure SDK client whose retry policy is disabled. Complete the minimal throttling handler.",
+    code: `try:
+    result = client.get_status(operation_id)
+except {{exception_type}} as exc:
+    if exc.status_code == {{status_code}}:
+        delay = int(exc.response.headers.get("{{retry_header}}", "1"))
+        time.sleep(min(delay, 30))
+        result = client.get_status(operation_id)`,
+    blanks: [
+      {
+        id: "exception_type",
+        label: "Azure HTTP exception",
+        options: [
+          { id: "http_response", text: "HttpResponseError", rationale: "Correct. Azure SDK service failures with HTTP status information are surfaced as HttpResponseError." },
+          { id: "client_auth", text: "ClientAuthenticationError", rationale: "This is specific to authentication failures and isn't the general throttling exception." },
+          { id: "resource_not_found", text: "ResourceNotFoundError", rationale: "A 404-specific exception won't catch a 429 throttle response." },
+        ],
+      },
+      {
+        id: "status_code",
+        label: "Throttle status code",
+        options: [
+          { id: "429", text: "429", rationale: "Correct. HTTP 429 indicates that the client has exceeded an applicable rate or quota limit." },
+          { id: "408", text: "408", rationale: "408 is a request timeout and doesn't specifically identify service throttling." },
+          { id: "503", text: "503", rationale: "503 indicates service unavailability; retry may be appropriate, but it is not the throttle condition asked for." },
+        ],
+      },
+      {
+        id: "retry_header",
+        label: "Server retry guidance header",
+        options: [
+          { id: "retry_after", text: "Retry-After", rationale: "Correct. Retry-After communicates how long the client should wait before retrying." },
+          { id: "rate_remaining", text: "x-ratelimit-remaining", rationale: "A remaining-quota header doesn't communicate the retry delay used by this code." },
+          { id: "request_id", text: "x-ms-request-id", rationale: "The request ID supports diagnostics but isn't a wait duration." },
+        ],
+      },
+    ],
+    correct: { exception_type: "http_response", status_code: "429", retry_header: "retry_after" },
+    explanation: "Azure SDK HTTP failures use HttpResponseError. A 429 handler should honor Retry-After, bound its delay and attempts, and retry only operations that are safe to repeat.",
+    source: sources.pythonErrors,
+  },
+  {
+    id: 144,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Configure a Content Safety text analysis request",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "A moderation gateway must return four-level severity scores for all harm categories and stop category analysis when an approved blocklist matches. Complete the request body.",
+    code: `{
+  "text": "User supplied content",
+  "categories": ["Hate", "Sexual", "SelfHarm", "Violence"],
+  "blocklistNames": ["regulated-terms"],
+  "{{halt_property}}": true,
+  "outputType": "{{severity_scale}}"
+}`,
+    blanks: [
+      {
+        id: "halt_property",
+        label: "Stop-on-blocklist property",
+        options: [
+          { id: "halt", text: "haltOnBlocklistHit", rationale: "Correct. This property stops further harm-category analysis when a configured blocklist matches." },
+          { id: "stop", text: "stopOnBlocklistMatch", rationale: "This is a plausible description but not the Analyze Text API property name." },
+          { id: "block", text: "blockOnMatch", rationale: "This isn't the request-contract property used by Content Safety." },
+        ],
+      },
+      {
+        id: "severity_scale",
+        label: "Four-level output setting",
+        options: [
+          { id: "four", text: "FourSeverityLevels", rationale: "Correct. This returns severities 0, 2, 4, and 6." },
+          { id: "eight", text: "EightSeverityLevels", rationale: "This is valid but returns eight levels rather than the required four-level scale." },
+          { id: "binary", text: "BinaryDecision", rationale: "The API contract doesn't use this value for severity output." },
+        ],
+      },
+    ],
+    correct: { halt_property: "halt", severity_scale: "four" },
+    explanation: "haltOnBlocklistHit controls whether analysis stops after a blocklist hit. FourSeverityLevels requests the 0, 2, 4, and 6 severity scale.",
+    source: sources.safety,
+  },
+  {
+    id: 145,
+    section: "general",
+    domain: "Plan and manage an Azure AI solution",
+    objective: "Define a tenant security filter field",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "A new Azure AI Search index will enforce tenant isolation before vector scoring. Complete the tenant field so it supports exact authorization filters without full-text analysis.",
+    code: `{
+  "name": "tenantId",
+  "type": "{{field_type}}",
+  "key": false,
+  "searchable": {{searchable}},
+  "filterable": {{filterable}},
+  "sortable": false,
+  "facetable": false
+}`,
+    blanks: [
+      {
+        id: "field_type",
+        label: "Tenant identifier field type",
+        options: [
+          { id: "string", text: "Edm.String", rationale: "Correct. A tenant identifier is represented as a string field that can be compared by a filter." },
+          { id: "strings", text: "Collection(Edm.String)", rationale: "A collection is appropriate for multiple values, but each document has one tenant identifier in this scenario." },
+          { id: "single", text: "Edm.Single", rationale: "Edm.Single is a floating-point type and is not appropriate for an exact tenant identifier." },
+        ],
+      },
+      {
+        id: "searchable",
+        label: "Full-text search attribute",
+        options: [
+          { id: "false", text: "false", rationale: "Correct. The field is used for exact authorization filtering, not tokenized full-text search." },
+          { id: "true", text: "true", rationale: "Making it searchable enables lexical analysis that the exact identifier doesn't need." },
+          { id: "null", text: "null", rationale: "The schema expects a Boolean attribute, not null." },
+        ],
+      },
+      {
+        id: "filterable",
+        label: "Filter attribute",
+        options: [
+          { id: "true", text: "true", rationale: "Correct. filterable must be true before the field can be used in the tenant OData filter." },
+          { id: "false", text: "false", rationale: "A nonfilterable field cannot enforce the query's tenant predicate." },
+          { id: "null", text: "null", rationale: "The index schema requires a Boolean value for filterable." },
+        ],
+      },
+    ],
+    correct: { field_type: "string", searchable: "false", filterable: "true" },
+    explanation: "Tenant IDs should be exact filterable strings. They don't need full-text tokenization, and the query must use preFilter so unauthorized documents never enter vector candidate scoring.",
+    source: sources.searchFieldFilters,
+  },
+  {
+    id: 146,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Create a versioned prompt agent with the Python SDK",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "Complete the current Foundry Agent Service SDK code that creates a named, versioned prompt agent.",
+    code: `agent_definition = {{definition_class}}(
+    model="gpt-5-mini",
+    {{instruction_parameter}}="Answer from approved policies.",
+)
+
+agent = project.agents.{{create_method}}(
+    agent_name="support-agent",
+    definition=agent_definition,
+)`,
+    blanks: [
+      {
+        id: "definition_class",
+        label: "Prompt agent definition class",
+        options: [
+          { id: "prompt", text: "PromptAgentDefinition", rationale: "Correct. PromptAgentDefinition declares the model and instructions for a persisted prompt agent." },
+          { id: "response", text: "ResponseAgentDefinition", rationale: "This isn't the SDK class used for a prompt agent definition." },
+          { id: "workflow", text: "WorkflowAgentDefinition", rationale: "A workflow and a prompt-agent definition are different agent types." },
+        ],
+      },
+      {
+        id: "create_method",
+        label: "Version creation method",
+        options: [
+          { id: "create_version", text: "create_version", rationale: "Correct. Current agents are named, versioned assets created with create_version." },
+          { id: "create_agent", text: "create_agent", rationale: "Older or different SDK surfaces may use this-looking name, but the current project agents client creates a version." },
+          { id: "create_response", text: "create_response", rationale: "Creating a response invokes an agent; it doesn't create the persisted definition." },
+        ],
+      },
+      {
+        id: "instruction_parameter",
+        label: "Agent instruction parameter",
+        options: [
+          { id: "instructions", text: "instructions", rationale: "Correct. PromptAgentDefinition receives its behavior text through instructions." },
+          { id: "system_prompt", text: "system_prompt", rationale: "This plausible term isn't the constructor parameter shown by the SDK." },
+          { id: "description", text: "description", rationale: "A description labels an asset; it doesn't define the agent's operating instructions." },
+        ],
+      },
+    ],
+    correct: { definition_class: "prompt", create_method: "create_version", instruction_parameter: "instructions" },
+    explanation: "The current SDK uses PromptAgentDefinition and project.agents.create_version. Agents are identified by name and version rather than an older AgentID pattern.",
+    source: sources.agents,
+  },
+  {
+    id: 147,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Chain Responses API turns with a conversation",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "An application wants durable multi-turn state that can be inspected independently of any one response. Complete the conversation creation and response call.",
+    code: `conversation = openai.conversations.{{conversation_operation}}(
+    items=[{
+        "type": "message",
+        "role": "user",
+        "content": "Diagnose pump P-17",
+    }]
+)
+
+response = openai.responses.create(
+    model=deployment_name,
+    input="Use only the current maintenance manual.",
+    {{state_parameter}}=conversation.id,
+)`,
+    blanks: [
+      {
+        id: "conversation_operation",
+        label: "Conversation operation",
+        options: [
+          { id: "create", text: "create", rationale: "Correct. create starts the durable conversation and can seed it with initial items." },
+          { id: "retrieve", text: "retrieve", rationale: "retrieve needs an existing ID and doesn't create the container shown here." },
+          { id: "update", text: "update", rationale: "update modifies an existing conversation rather than creating one." },
+        ],
+      },
+      {
+        id: "state_parameter",
+        label: "Conversation association parameter",
+        options: [
+          { id: "conversation", text: "conversation", rationale: "Correct. The conversation parameter associates the response with the durable container." },
+          { id: "previous_response", text: "previous_response_id", rationale: "This chains from a particular response but doesn't use the newly created conversation container." },
+          { id: "conversation_id", text: "conversation_id", rationale: "The value is an ID, but the documented Responses parameter name is conversation." },
+        ],
+      },
+    ],
+    correct: { conversation_operation: "create", state_parameter: "conversation" },
+    explanation: "A conversation is a durable container for multi-turn items. Responses join it through the conversation parameter; previous_response_id is an alternative chaining mechanism, not the requested container.",
+    source: sources.agents,
+  },
+  {
+    id: 148,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Stream a persisted agent response",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "A chat UI must display text deltas from a persisted Foundry agent as they arrive. Complete the streaming request and event handling.",
+    code: `stream = openai.{{response_collection}}.create(
+    extra_body={
+        "agent_reference": {
+            "name": agent_name,
+            "type": "agent_reference",
+        }
+    },
+    input="Explain the repair in one paragraph.",
+    {{stream_parameter}}=True,
+)
+
+for event in stream:
+    delta = getattr(event, "{{delta_property}}", None)
+    if delta:
+        print(delta, end="", flush=True)`,
+    blanks: [
+      {
+        id: "response_collection",
+        label: "Response API collection",
+        options: [
+          { id: "responses", text: "responses", rationale: "Correct. Streaming is enabled on a Responses API create call." },
+          { id: "conversations", text: "conversations", rationale: "Conversations store history; their create call doesn't stream generated text." },
+          { id: "agents", text: "agents", rationale: "Agent administration creates definitions and versions, not response text streams." },
+        ],
+      },
+      {
+        id: "stream_parameter",
+        label: "Streaming parameter",
+        options: [
+          { id: "stream", text: "stream", rationale: "Correct. stream=True returns an iterable stream of response events." },
+          { id: "background", text: "background", rationale: "Background mode is asynchronous completion, not incremental foreground text streaming." },
+          { id: "incremental", text: "incremental", rationale: "This isn't the documented Responses API parameter name." },
+        ],
+      },
+      {
+        id: "delta_property",
+        label: "Text delta property",
+        options: [
+          { id: "delta", text: "delta", rationale: "Correct. Text streaming events expose the incremental text in delta." },
+          { id: "output_text", text: "output_text", rationale: "output_text represents assembled response text rather than the event's incremental delta." },
+          { id: "content", text: "content", rationale: "Content is used in message items; it isn't the incremental event property in this sample." },
+        ],
+      },
+    ],
+    correct: { response_collection: "responses", stream_parameter: "stream", delta_property: "delta" },
+    explanation: "A persisted agent can be invoked through responses.create with an agent_reference. stream=True returns events, and each available delta is written incrementally.",
+    source: sources.agents,
+  },
+  {
+    id: 149,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Configure strict structured output on the Responses API",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "A Responses API call must return an object that conforms to a supplied incident schema. Complete the structured-output portion of the request.",
+    code: `{
+  "model": "reasoning-deployment",
+  "input": "Extract the incident details.",
+  "text": {
+    "{{format_container}}": {
+      "type": "{{format_type}}",
+      "name": "incident",
+      "strict": {{strict_value}},
+      "schema": {
+        "type": "object",
+        "properties": {
+          "severity": { "type": "string" }
+        },
+        "required": ["severity"],
+        "additionalProperties": false
+      }
+    }
+  }
+}`,
+    blanks: [
+      {
+        id: "format_container",
+        label: "Responses text format container",
+        options: [
+          { id: "format", text: "format", rationale: "Correct. Responses structured output is declared under text.format." },
+          { id: "response_format", text: "response_format", rationale: "Chat Completions uses response_format; the Responses API places the declaration under text.format." },
+          { id: "schema_format", text: "schema_format", rationale: "This isn't a supported request property." },
+        ],
+      },
+      {
+        id: "format_type",
+        label: "Structured output type",
+        options: [
+          { id: "json_schema", text: "json_schema", rationale: "Correct. json_schema selects schema-constrained structured output." },
+          { id: "json_object", text: "json_object", rationale: "JSON mode produces valid JSON but doesn't guarantee conformance to this schema." },
+          { id: "object_schema", text: "object_schema", rationale: "This isn't a supported structured-output type." },
+        ],
+      },
+      {
+        id: "strict_value",
+        label: "Strict schema enforcement",
+        options: [
+          { id: "true", text: "true", rationale: "Correct. strict true requests adherence to the supported JSON Schema subset." },
+          { id: "false", text: "false", rationale: "False would not request the strict schema behavior required by the scenario." },
+          { id: "string", text: "\"true\"", rationale: "The property expects a Boolean, not a string." },
+        ],
+      },
+    ],
+    correct: { format_container: "format", format_type: "json_schema", strict_value: "true" },
+    explanation: "Responses API structured output is configured in text.format. json_schema with strict true constrains the generated object to the supported schema rather than merely requesting valid JSON.",
+    source: sources.structuredOutputs,
+  },
+  {
+    id: 150,
+    section: "general",
+    domain: "Implement generative AI and agentic solutions",
+    objective: "Define a strict function tool schema",
+    difficulty: "Advanced",
+    type: "code",
+    language: "json",
+    stem: "A function tool creates a work order only after the server validates its arguments. Complete the schema so the model supplies a bounded object with no undeclared fields.",
+    code: `{
+  "type": "function",
+  "name": "create_work_order",
+  "description": "Create an approved maintenance work order",
+  "parameters": {
+    "type": "{{parameter_type}}",
+    "properties": {
+      "equipment_id": { "type": "string" },
+      "priority": {
+        "type": "string",
+        "{{constraint_keyword}}": ["normal", "urgent"]
+      }
+    },
+    "required": ["equipment_id", "priority"],
+    "additionalProperties": {{additional_properties}}
+  },
+  "strict": true
+}`,
+    blanks: [
+      {
+        id: "parameter_type",
+        label: "Function arguments root type",
+        options: [
+          { id: "object", text: "object", rationale: "Correct. Named function arguments are represented as properties of an object schema." },
+          { id: "array", text: "array", rationale: "An array would require items and wouldn't match the named properties shown." },
+          { id: "string", text: "string", rationale: "A string root cannot contain the declared properties." },
+        ],
+      },
+      {
+        id: "constraint_keyword",
+        label: "Allowed values keyword",
+        options: [
+          { id: "enum", text: "enum", rationale: "Correct. enum constrains priority to the two declared string values." },
+          { id: "examples", text: "examples", rationale: "Examples illustrate values but don't restrict output to them." },
+          { id: "choices", text: "choices", rationale: "choices isn't the JSON Schema keyword for an allowed-value set." },
+        ],
+      },
+      {
+        id: "additional_properties",
+        label: "Undeclared-field policy",
+        options: [
+          { id: "false", text: "false", rationale: "Correct. Strict function schemas use additionalProperties false to reject undeclared arguments." },
+          { id: "true", text: "true", rationale: "True permits extra fields and conflicts with the bounded-arguments requirement." },
+          { id: "null", text: "null", rationale: "This doesn't express the required Boolean prohibition." },
+        ],
+      },
+    ],
+    correct: { parameter_type: "object", constraint_keyword: "enum", additional_properties: "false" },
+    explanation: "A strict function tool uses an object schema, constrains enumerated values with enum, lists required fields, and sets additionalProperties to false. The server must still validate authorization and arguments.",
+    source: sources.structuredOutputs,
+  },
+  {
+    id: 151,
+    section: "general",
+    domain: "Implement computer vision solutions",
+    objective: "Decode generated image data from Python",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "A GPT-image deployment returns generated image data inline. Complete the call and decoding code before the application writes the PNG bytes.",
+    code: `result = client.images.{{image_operation}}(
+    model=image_deployment,
+    prompt="A product cutout on a transparent background",
+    size="1024x1024",
+)
+
+encoded_image = result.data[0].{{image_property}}
+image_bytes = base64.{{decode_method}}(encoded_image)
+Path("cutout.png").write_bytes(image_bytes)`,
+    blanks: [
+      {
+        id: "image_operation",
+        label: "Text-to-image operation",
+        options: [
+          { id: "generate", text: "generate", rationale: "Correct. generate creates a new image from the supplied prompt." },
+          { id: "edit", text: "edit", rationale: "edit expects a source image and is not the text-only operation shown." },
+          { id: "create_variation", text: "create_variation", rationale: "A variation also starts from an image and doesn't match this request." },
+        ],
+      },
+      {
+        id: "image_property",
+        label: "Base64 image response property",
+        options: [
+          { id: "b64_json", text: "b64_json", rationale: "Correct. Current GPT-image results expose inline base64 data through b64_json." },
+          { id: "url", text: "url", rationale: "Current Azure GPT-image responses use inline base64 data rather than a hosted image URL." },
+          { id: "image_bytes", text: "image_bytes", rationale: "This is not the response-model property that carries generated image data." },
+        ],
+      },
+      {
+        id: "decode_method",
+        label: "Base64 decoding method",
+        options: [
+          { id: "b64decode", text: "b64decode", rationale: "Correct. b64decode converts the encoded response string into binary image bytes." },
+          { id: "b64encode", text: "b64encode", rationale: "b64encode performs the opposite conversion." },
+          { id: "decodebytes", text: "decodebytes", rationale: "decodebytes expects bytes-like input; b64decode is the direct method for the returned encoded value." },
+        ],
+      },
+    ],
+    correct: { image_operation: "generate", image_property: "b64_json", decode_method: "b64decode" },
+    explanation: "Text-to-image uses client.images.generate. Azure GPT-image responses return base64 content in b64_json, which the application decodes before writing the output file.",
+    source: sources.imageGeneration,
+  },
+  {
+    id: 152,
+    section: "general",
+    domain: "Implement text analysis solutions",
+    objective: "Configure continuous Speech recognition callbacks",
+    difficulty: "Advanced",
+    type: "code",
+    language: "python",
+    stem: "A voice interface must display interim text while the caller is speaking and continue listening until the application stops it. Complete the Speech SDK configuration.",
+    code: `speech_config = speechsdk.SpeechConfig(
+    subscription=speech_key,
+    region=speech_region,
+)
+audio_config = speechsdk.audio.AudioConfig(use_default_microphone=True)
+recognizer = speechsdk.{{recognizer_class}}(
+    speech_config=speech_config,
+    audio_config=audio_config,
+)
+
+recognizer.{{interim_event}}.connect(show_partial_text)
+recognizer.{{start_method}}()`,
+    blanks: [
+      {
+        id: "recognizer_class",
+        label: "Speech-to-text recognizer",
+        options: [
+          { id: "speech_recognizer", text: "SpeechRecognizer", rationale: "Correct. SpeechRecognizer converts microphone audio to text." },
+          { id: "translation_recognizer", text: "translation.TranslationRecognizer", rationale: "TranslationRecognizer is used when translated target text is required; this scenario asks only for recognition." },
+          { id: "speech_synthesizer", text: "SpeechSynthesizer", rationale: "SpeechSynthesizer converts text to audio, the opposite direction." },
+        ],
+      },
+      {
+        id: "interim_event",
+        label: "Interim result event",
+        options: [
+          { id: "recognizing", text: "recognizing", rationale: "Correct. recognizing fires with intermediate hypotheses while speech is in progress." },
+          { id: "recognized", text: "recognized", rationale: "recognized fires for finalized recognition results, not interim text." },
+          { id: "session_started", text: "session_started", rationale: "This reports session state and doesn't contain partial recognized text." },
+        ],
+      },
+      {
+        id: "start_method",
+        label: "Continuous recognition start method",
+        options: [
+          { id: "continuous", text: "start_continuous_recognition", rationale: "Correct. This starts ongoing recognition and returns control to the application." },
+          { id: "once", text: "recognize_once", rationale: "recognize_once handles a single utterance and doesn't continue until explicitly stopped." },
+          { id: "keyword", text: "start_keyword_recognition", rationale: "Keyword recognition waits for a configured keyword and isn't general continuous transcription." },
+        ],
+      },
+    ],
+    correct: { recognizer_class: "speech_recognizer", interim_event: "recognizing", start_method: "continuous" },
+    explanation: "SpeechRecognizer handles speech-to-text. The recognizing event exposes interim hypotheses, and start_continuous_recognition keeps the session active until stopped.",
+    source: sources.speech,
+  },
+  {
+    id: 153,
+    section: "general",
+    domain: "Implement text analysis solutions",
+    objective: "Construct a Translator Text REST request",
+    difficulty: "Advanced",
+    type: "code",
+    language: "http",
+    stem: "A service translates already-extracted text from English to French. Complete the Translator REST request while using a regional multi-service resource key.",
+    code: `POST https://api.cognitive.microsofttranslator.com/{{operation}}?api-version={{api_version}}&from=en&to=fr
+Ocp-Apim-Subscription-Key: {translator-key}
+{{region_header}}: westeurope
+Content-Type: application/json
+
+[{ "Text": "The maintenance window starts at 18:00." }]`,
+    blanks: [
+      {
+        id: "operation",
+        label: "Translator operation path",
+        options: [
+          { id: "translate", text: "translate", rationale: "Correct. The translate operation converts the supplied text into the target language." },
+          { id: "transliterate", text: "transliterate", rationale: "Transliteration changes writing systems and isn't general language translation." },
+          { id: "detect", text: "detect", rationale: "Detect identifies the source language but doesn't produce French output." },
+        ],
+      },
+      {
+        id: "api_version",
+        label: "Translator Text API version",
+        options: [
+          { id: "v3", text: "3.0", rationale: "Correct. Translator Text REST requests use api-version 3.0." },
+          { id: "v2", text: "2.0", rationale: "This isn't the documented version for the current request contract." },
+          { id: "date", text: "2024-09-01", rationale: "That date-style version is used by other Azure AI APIs, not Translator Text here." },
+        ],
+      },
+      {
+        id: "region_header",
+        label: "Regional resource header",
+        options: [
+          { id: "region", text: "Ocp-Apim-Subscription-Region", rationale: "Correct. A regional or multi-service resource key requires its resource region header." },
+          { id: "location", text: "Ocp-Apim-Resource-Location", rationale: "This plausible name isn't the Translator authentication header." },
+          { id: "endpoint", text: "Ocp-Apim-Subscription-Endpoint", rationale: "The endpoint belongs in the URL, not this nonexistent header." },
+        ],
+      },
+    ],
+    correct: { operation: "translate", api_version: "v3", region_header: "region" },
+    explanation: "Translator Text uses the /translate operation with api-version 3.0. Regional and multi-service resources send Ocp-Apim-Subscription-Region along with the key.",
+    source: sources.translator,
+  },
 ];
+
+function isCorrectOption(question: SingleQuestion | MultiQuestion, optionId: string) {
+  return question.type === "single"
+    ? question.correct === optionId
+    : question.correct.includes(optionId);
+}
+
+export const questions: Question[] = questionDrafts.map((question) => {
+  if (question.type === "single" || question.type === "multi") {
+    const textOverrides = distractorTextOverrides[question.id] ?? {};
+    return {
+      ...question,
+      options: question.options.map((option) => {
+        const text = textOverrides[option.id] ?? option.text;
+        const correct = isCorrectOption(question, option.id);
+        return {
+          ...option,
+          text,
+          rationale: option.rationale ?? (correct
+            ? `Correct. ${question.explanation}`
+            : `This is a plausible adjacent choice, but it does not satisfy every stated constraint. ${question.explanation}`),
+        };
+      }),
+    };
+  }
+
+  if (question.type === "code") {
+    return {
+      ...question,
+      blanks: question.blanks.map((blank) => ({
+        ...blank,
+        options: blank.options.map((option) => {
+          const correct = question.correct[blank.id] === option.id;
+          return {
+            ...option,
+            rationale: option.rationale ?? (correct
+              ? `Correct. ${question.explanation}`
+              : `This token is syntactically plausible here, but it does not complete the documented API or SDK contract. ${question.explanation}`),
+          };
+        }),
+      })),
+    };
+  }
+
+  return question;
+});
 
 export const sectionMeta: Record<SectionId, { label: string; description: string }> = {
   northwind: {
     label: "Northwind Assist",
-    description: "Northwind Assist · 5 questions",
+    description: "Northwind Assist · 7 questions",
   },
   alpine: {
     label: "Alpine Media Library",
-    description: "Alpine Media Library · 5 questions",
+    description: "Alpine Media Library · 7 questions",
   },
   fabrikam: {
     label: "Fabrikam Claims Hub",
-    description: "Fabrikam Claims Hub · 5 questions",
+    description: "Fabrikam Claims Hub · 7 questions",
   },
   contoso: {
     label: "Contoso Field Service",
-    description: "Contoso Field Service · 5 questions",
+    description: "Contoso Field Service · 7 questions",
   },
   woodgrove: {
     label: "Woodgrove Creative Studio",
-    description: "Woodgrove Creative Studio · 5 questions",
+    description: "Woodgrove Creative Studio · 7 questions",
   },
   general: {
     label: "General",
-    description: "Independent scenarios · 43 selected questions",
+    description: "Independent scenarios · 41 selected questions",
   },
   decision: {
     label: "Decision sequence",

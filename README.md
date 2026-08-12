@@ -11,17 +11,18 @@ The simulator provides a full 51-question attempt, timed and study modes, a case
 
 ## Features
 
-- 130 original, blueprint-aligned questions
+- 153 original, blueprint-aligned questions
 - 51 questions selected for each attempt
-- One five-question, 15-paragraph case study selected from a pool of five
-- 43 independent scenarios selected from a pool of 102
+- One seven-question, 15-paragraph case study selected from a pool of five
+- 41 independent scenarios selected from a pool of 115
 - Three final Yes/No decision items that lock as you advance
 - Fresh question and answer ordering for every new attempt
 - Exact blueprint-balanced domain coverage in every attempt
 - 100-minute exam clock and an untimed study mode
-- Exactly 14 interactive or special-format items per attempt (about 27%)
-- An exact per-run mix of 30 single-choice, 7 multiple-response, 4 code-completion, 7 other interactive, and 3 decision items
-- Python, JSON, HTTP/REST, and Azure CLI code-completion items, plus build-list, matching, matrix, and Yes/No formats
+- Exactly 17 interactive or special-format items per attempt (about 33%)
+- An exact per-run mix of 27 single-choice, 7 multiple-response, 9 code-completion, 5 other interactive, and 3 decision items
+- A 30-item code pool covering Python, JSON, HTTP/REST, and Azure CLI, plus build-list, matching, matrix, and Yes/No formats
+- Deliberately close distractors drawn from the same service, SDK, role, API, or architectural family
 - Mark for review, private notes, review screens, timed breaks, and section locks
 - Automatic progress saving in the browser
 - Answer explanations and direct links to supporting Microsoft Learn documentation
@@ -41,9 +42,9 @@ Every attempt contains 51 questions distributed as follows:
 | Implement text analysis solutions | 10–15% | 7 |
 | Implement information extraction solutions | 10–15% | 7 |
 
-The delivery order is 43 reviewable independent questions, one reviewable five-question case study, and a final three-item Yes/No sequence. Each case study contains 15 paragraphs (about 600 or more words) distributed across several tabs to reproduce the sustained reading and cross-referencing workload described in public delivery reports. In the final sequence, each answer becomes permanent when you advance and there is no section review screen.
+The delivery order is 41 reviewable independent questions, one reviewable seven-question case study, and a final three-item Yes/No sequence. Each case study contains 15 paragraphs (about 600 or more words) distributed across several tabs to reproduce the sustained reading and cross-referencing workload described in public delivery reports. In the final sequence, each answer becomes permanent when you advance and there is no section review screen.
 
-The question selection and displayed answer order are seeded for each attempt. They remain stable while navigating or resuming an attempt, but a new attempt produces a different selection and ordering. The selector holds both the domain distribution and the item-format mix constant, including four code-completion questions and 14 interactive or special-format items, rather than allowing either mix to vary widely between runs.
+The question selection and displayed answer order are seeded for each attempt. They remain stable while navigating or resuming an attempt, but a new attempt produces a different selection and ordering. The selector holds both the domain distribution and the item-format mix constant, including nine code-completion questions and 17 interactive or special-format items, rather than allowing either mix to vary widely between runs.
 
 ## Fidelity calibration
 
@@ -53,7 +54,7 @@ The simulator separates **content grounding** from **delivery calibration**:
 - Delivery mechanics are calibrated from Microsoft's public exam-experience guidance and anonymized public experience reports. These signals inform timing, section flow, item-format mix, navigation locks, and interface behavior only.
 - Recalled live question wording and answer choices are never used. The project is not, and cannot claim to be, a one-to-one copy of a live exam form.
 
-The current calibration uses a 100-minute scored-exam clock inside Microsoft's 120-minute associate-exam appointment window, mostly standard multiple-choice items, approximately one quarter interactive/special formats, a long-form case study, code completion in Python/JSON/REST/Azure CLI, no lab section, Microsoft Learn access while the timer continues, and a final three-question no-review decision sequence. Microsoft can change the composition of individual live forms, so these are best-effort practice defaults rather than guarantees.
+The current calibration uses a 100-minute scored-exam clock inside Microsoft's 120-minute associate-exam appointment window, a deliberately demanding selected-response bank, nine inline code-dropdown items, a long-form case study, code completion in Python/JSON/REST/Azure CLI, no lab section, Microsoft Learn access while the timer continues, and a final three-question no-review decision sequence. Microsoft can change the composition of individual live forms, so these are best-effort practice defaults rather than guarantees.
 
 ## Quick start
 

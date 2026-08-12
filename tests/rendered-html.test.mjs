@@ -41,7 +41,7 @@ test("server-renders the AI-103 practice entry screen", async () => {
   assert.match(html, /<title>AI-103 Practice Exam \| Azure AI Apps and Agents<\/title>/i);
   assert.match(html, /Preparing your practice environment/);
   assert.match(html, /ExamSimulator-/);
-  assert.match(html, /130 original questions · 51 per attempt · 5 skill domains/);
+  assert.match(html, /153 original questions · 51 per attempt · 9 code dropdowns/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
@@ -49,14 +49,14 @@ test("question bank has the intended blueprint distribution", async () => {
   const source = await readFile(new URL("../app/questions.ts", import.meta.url), "utf8");
   const ids = [...source.matchAll(/^\s+id: (\d+),$/gm)].map((match) => Number(match[1]));
 
-  assert.deepEqual(ids, Array.from({ length: 130 }, (_, index) => index + 1));
+  assert.deepEqual(ids, Array.from({ length: 153 }, (_, index) => index + 1));
 
   const expected = new Map([
-    ["Plan and manage an Azure AI solution", 35],
-    ["Implement generative AI and agentic solutions", 38],
-    ["Implement computer vision solutions", 17],
-    ["Implement text analysis solutions", 16],
-    ["Implement information extraction solutions", 24],
+    ["Plan and manage an Azure AI solution", 42],
+    ["Implement generative AI and agentic solutions", 46],
+    ["Implement computer vision solutions", 20],
+    ["Implement text analysis solutions", 19],
+    ["Implement information extraction solutions", 26],
   ]);
 
   for (const [domain, count] of expected) {
@@ -64,12 +64,12 @@ test("question bank has the intended blueprint distribution", async () => {
     assert.equal(matches.length, count, `${domain} should have ${count} questions`);
   }
 
-  assert.equal((source.match(/section: "northwind"/g) ?? []).length, 5);
-  assert.equal((source.match(/section: "alpine"/g) ?? []).length, 5);
-  assert.equal((source.match(/section: "fabrikam"/g) ?? []).length, 5);
-  assert.equal((source.match(/section: "contoso"/g) ?? []).length, 5);
-  assert.equal((source.match(/section: "woodgrove"/g) ?? []).length, 5);
-  assert.equal((source.match(/section: "general"/g) ?? []).length, 102);
+  assert.equal((source.match(/section: "northwind"/g) ?? []).length, 7);
+  assert.equal((source.match(/section: "alpine"/g) ?? []).length, 7);
+  assert.equal((source.match(/section: "fabrikam"/g) ?? []).length, 7);
+  assert.equal((source.match(/section: "contoso"/g) ?? []).length, 7);
+  assert.equal((source.match(/section: "woodgrove"/g) ?? []).length, 7);
+  assert.equal((source.match(/section: "general"/g) ?? []).length, 115);
   assert.equal((source.match(/section: "decision"/g) ?? []).length, 3);
   assert.doesNotMatch(source, /examtopics|actual exam dump|braindump/i);
 });
