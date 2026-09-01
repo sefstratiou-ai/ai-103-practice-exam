@@ -42,3 +42,6 @@ next-env.d.ts
 /work/
 /.winbinding/
 .exam-server.*.log
+
+/material/
+/tmp/

@@ -356,6 +356,14 @@ textarea:focus-visible {
 
 .resume-button span { color: var(--blue); font-weight: 700; }
 .resume-button small { color: var(--muted); margin-top: 3px; }
+.coverage-summary { border-top: 1px solid var(--line); display: grid; gap: 8px; margin-top: 20px; padding-top: 18px; }
+.coverage-summary-row { align-items: center; display: flex; font-size: 0.78rem; justify-content: space-between; }
+.coverage-summary-row span { color: var(--muted); }
+.coverage-summary progress { accent-color: var(--blue); height: 8px; width: 100%; }
+.coverage-summary small { color: var(--muted); font-size: 0.7rem; }
+.history-reset-button { background: transparent; border: 0; color: var(--blue); cursor: pointer; font-size: 0.72rem; font-weight: 700; justify-self: start; padding: 3px 0; }
+.history-reset-button:disabled { color: #9ba4ae; cursor: default; }
+.history-notice { color: var(--green); font-size: 0.7rem; line-height: 1.4; }
 .start-card .privacy-note { color: #7a8492; font-size: 0.75rem; margin: 20px 0 0; text-align: center; }
 
 .entry-footer {
@@ -1224,6 +1232,12 @@ textarea:focus-visible {
 .results-content { margin: 0 auto; max-width: 1180px; padding: 50px 24px 80px; }
 .domain-report,
 .review-report { background: #fff; box-shadow: 0 10px 35px rgba(32,48,66,0.07); margin-bottom: 28px; padding: 32px; }
+.coverage-report { align-items: center; background: #eaf4fb; border-left: 4px solid var(--blue); display: flex; gap: 28px; justify-content: space-between; margin-bottom: 28px; padding: 24px 28px; }
+.coverage-report h2 { font-size: 1.25rem; font-weight: 500; margin: 4px 0 8px; }
+.coverage-report p { color: var(--muted); font-size: 0.84rem; line-height: 1.55; margin: 0; }
+.coverage-report-facts { display: flex; gap: 22px; white-space: nowrap; }
+.coverage-report-facts span { color: var(--muted); display: flex; flex-direction: column; font-size: 0.68rem; text-transform: uppercase; }
+.coverage-report-facts strong { color: var(--navy); font-size: 1.2rem; margin-bottom: 3px; }
 .section-title-row { align-items: flex-end; display: flex; gap: 20px; justify-content: space-between; }
 .section-title-row h2 { font-size: 1.55rem; font-weight: 500; margin: 0; }
 .section-title-row .eyebrow { margin-bottom: 7px; }
@@ -1333,6 +1347,7 @@ textarea:focus-visible {
   .welcome-layout { padding: 32px 18px; }
   .blueprint-strip { gap: 16px; grid-template-columns: 1fr 1fr; }
   .start-card { padding: 26px 20px; }
+  .coverage-report { align-items: flex-start; flex-direction: column; }
   .mode-card { grid-template-columns: 44px 1fr; }
   .mode-arrow { display: none; }
   .setup-card { margin-top: 20px; padding: 28px 20px; width: calc(100% - 24px); }

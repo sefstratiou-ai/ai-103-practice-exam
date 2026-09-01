@@ -12,7 +12,7 @@ test("GitHub Pages build produces a complete static entry point", async () => {
   assert.match(html, /<div id="root"><\/div>/i);
   assert.match(html, /src="\/assets\/[^\"]+\.js"/i);
   assert.match(html, /href="\/assets\/[^\"]+\.css"/i);
-  assert.match(html, /content="\/og\.png"/i);
+  assert.match(html, /content="\/og-v2\.png"/i);
   assert.doesNotMatch(html, /__PAGES_|%BASE_URL%/);
   assert.ok(assets.some((name) => name.endsWith(".js")));
   assert.ok(assets.some((name) => name.endsWith(".css")));
@@ -20,6 +20,6 @@ test("GitHub Pages build produces a complete static entry point", async () => {
   await Promise.all([
     access(new URL(".nojekyll", outputRoot)),
     access(new URL("favicon.svg", outputRoot)),
-    access(new URL("og.png", outputRoot)),
+    access(new URL("og-v2.png", outputRoot)),
   ]);
 });

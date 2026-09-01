@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import test from "node:test";
+import { caseStudies, questions } from "../app/questions.ts";
 
 async function readDirectoryIfPresent(url) {
   try {
@@ -41,37 +42,40 @@ test("server-renders the AI-103 practice entry screen", async () => {
   assert.match(html, /<title>AI-103 Practice Exam \| Azure AI Apps and Agents<\/title>/i);
   assert.match(html, /Preparing your practice environment/);
   assert.match(html, /ExamSimulator-/);
-  assert.match(html, /153 original questions · 51 per attempt · 9 code dropdowns/);
+  assert.match(html, /226 original questions · 51 per attempt · 9 code dropdowns/);
   assert.doesNotMatch(html, /codex-preview|Your site is taking shape|react-loading-skeleton/i);
 });
 
-test("question bank has the intended blueprint distribution", async () => {
-  const source = await readFile(new URL("../app/questions.ts", import.meta.url), "utf8");
-  const ids = [...source.matchAll(/^\s+id: (\d+),$/gm)].map((match) => Number(match[1]));
+test("question bank has the intended blueprint distribution", () => {
+  const ids = questions.map((question) => question.id);
 
-  assert.deepEqual(ids, Array.from({ length: 153 }, (_, index) => index + 1));
+  assert.deepEqual(ids, Array.from({ length: 226 }, (_, index) => index + 1));
 
   const expected = new Map([
-    ["Plan and manage an Azure AI solution", 42],
-    ["Implement generative AI and agentic solutions", 46],
-    ["Implement computer vision solutions", 20],
-    ["Implement text analysis solutions", 19],
-    ["Implement information extraction solutions", 26],
+    ["Plan and manage an Azure AI solution", 61],
+    ["Implement generative AI and agentic solutions", 68],
+    ["Implement computer vision solutions", 31],
+    ["Implement text analysis solutions", 30],
+    ["Implement information extraction solutions", 36],
   ]);
 
   for (const [domain, count] of expected) {
-    const matches = source.match(new RegExp(`domain: \\"${domain}\\"`, "g")) ?? [];
-    assert.equal(matches.length, count, `${domain} should have ${count} questions`);
+    assert.equal(
+      questions.filter((question) => question.domain === domain).length,
+      count,
+      `${domain} should have ${count} questions`,
+    );
   }
 
-  assert.equal((source.match(/section: "northwind"/g) ?? []).length, 7);
-  assert.equal((source.match(/section: "alpine"/g) ?? []).length, 7);
-  assert.equal((source.match(/section: "fabrikam"/g) ?? []).length, 7);
-  assert.equal((source.match(/section: "contoso"/g) ?? []).length, 7);
-  assert.equal((source.match(/section: "woodgrove"/g) ?? []).length, 7);
-  assert.equal((source.match(/section: "general"/g) ?? []).length, 115);
-  assert.equal((source.match(/section: "decision"/g) ?? []).length, 3);
-  assert.doesNotMatch(source, /examtopics|actual exam dump|braindump/i);
+  for (const caseStudy of caseStudies) {
+    assert.equal(
+      questions.filter((question) => question.section === caseStudy.id).length,
+      7,
+    );
+  }
+  assert.equal(questions.filter((question) => question.section === "general").length, 165);
+  assert.equal(questions.filter((question) => question.section === "decision").length, 12);
+  assert.doesNotMatch(JSON.stringify(questions), /examtopics|actual exam dump|braindump/i);
 });
 
 test("starter preview is fully removed and the social card exists", async () => {
@@ -79,7 +83,7 @@ test("starter preview is fully removed and the social card exists", async () => 
     await readDirectoryIfPresent(new URL("../app/_sites-preview", import.meta.url)),
     [],
   );
-  await access(new URL("../public/og.png", import.meta.url));
+  await access(new URL("../public/og-v2.png", import.meta.url));
 
   const [page, layout, packageJson, simulator] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -90,7 +94,7 @@ test("starter preview is fully removed and the social card exists", async () => 
 
   assert.match(page, /<ExamSimulator \/>/);
   assert.match(layout, /AI-103 Practice Exam/);
-  assert.match(layout, /og\.png/);
+  assert.match(layout, /og-v2\.png/);
   assert.match(simulator, /Practice the pressure/);
   assert.match(simulator, /Full exam simulation/);
   assert.match(simulator, /Unofficial practice simulator/);

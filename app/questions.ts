@@ -1,4 +1,11 @@
 import { distractorTextOverrides } from "./questionEnhancements";
+import {
+  expandedCaseStudies,
+  expandedCaseStudyQuestions,
+} from "./questionBank/caseStudies";
+import { decisionSequenceQuestions } from "./questionBank/decisionSequences";
+import { expandedGeneralQuestions } from "./questionBank/general";
+import { withQuestionMetadata } from "./questionBank/metadata";
 
 export const domains = [
   "Plan and manage an Azure AI solution",
@@ -15,6 +22,8 @@ export const caseStudyIds = [
   "fabrikam",
   "contoso",
   "woodgrove",
+  "litware",
+  "adventureworks",
 ] as const;
 export type CaseStudyId = (typeof caseStudyIds)[number];
 export type SectionId = CaseStudyId | "general" | "decision";
@@ -33,6 +42,11 @@ type QuestionBase = {
   context?: string;
   explanation: string;
   source: Source;
+  skillId?: string;
+  topicTags?: string[];
+  lastVerified?: string;
+  variantGroup?: string;
+  lifecycle?: "ga" | "preview";
 };
 
 export type SingleQuestion = QuestionBase & {
@@ -71,6 +85,7 @@ export type MatrixQuestion = QuestionBase & {
 export type DecisionQuestion = QuestionBase & {
   type: "decision";
   correct: "yes" | "no";
+  decisionSetId?: string;
 };
 
 export type CodeQuestion = QuestionBase & {
@@ -296,7 +311,7 @@ const sources = {
   },
 };
 
-export const caseStudies: CaseStudy[] = [
+const legacyCaseStudies: CaseStudy[] = [
   {
     id: "northwind",
     title: "Case study: Northwind Assist",
@@ -507,6 +522,11 @@ export const caseStudies: CaseStudy[] = [
       },
     ],
   },
+];
+
+export const caseStudies: CaseStudy[] = [
+  ...legacyCaseStudies,
+  ...expandedCaseStudies,
 ];
 
 const questionDrafts: Question[] = [
@@ -4272,6 +4292,9 @@ Content-Type: application/json
     explanation: "Translator Text uses the /translate operation with api-version 3.0. Regional and multi-service resources send Ocp-Apim-Subscription-Region along with the key.",
     source: sources.translator,
   },
+  ...expandedGeneralQuestions,
+  ...expandedCaseStudyQuestions,
+  ...decisionSequenceQuestions,
 ];
 
 function isCorrectOption(question: SingleQuestion | MultiQuestion, optionId: string) {
@@ -4281,6 +4304,7 @@ function isCorrectOption(question: SingleQuestion | MultiQuestion, optionId: str
 }
 
 export const questions: Question[] = questionDrafts.map((question) => {
+  question = withQuestionMetadata(question);
   if (question.type === "single" || question.type === "multi") {
     const textOverrides = distractorTextOverrides[question.id] ?? {};
     return {
@@ -4340,6 +4364,14 @@ export const sectionMeta: Record<SectionId, { label: string; description: string
   woodgrove: {
     label: "Woodgrove Creative Studio",
     description: "Woodgrove Creative Studio · 7 questions",
+  },
+  litware: {
+    label: "Litware Contact Center",
+    description: "Litware Contact Center · 7 questions",
+  },
+  adventureworks: {
+    label: "Adventure Works Media",
+    description: "Adventure Works Media · 7 questions",
   },
   general: {
     label: "General",

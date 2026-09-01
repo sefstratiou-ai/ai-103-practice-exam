@@ -20,6 +20,14 @@ import {
   createExamSelectionFromIds,
   EXAM_QUESTION_COUNT,
 } from "./questionSelection";
+import {
+  countSeenQuestionIds,
+  createEmptySelectionHistory,
+  HISTORY_STORAGE_KEY,
+  parseSelectionHistory,
+  recordExamSelection,
+  type SelectionHistory,
+} from "./questionHistory";
 
 type ExamScreen =
   | "welcome"
@@ -102,6 +110,24 @@ const learnLinks = [
     description: "Speech to text, text to speech, translation, and SSML",
     url: "https://learn.microsoft.com/en-us/azure/ai-services/speech-service/",
     keywords: "speech transcription synthesis translation ssml voice",
+  },
+  {
+    label: "Agent memory and file search",
+    description: "Per-user memory, uploaded files, vector stores, and retrieval",
+    url: "https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/memory-usage?view=foundry",
+    keywords: "memory user scope file search vector store conversation",
+  },
+  {
+    label: "Azure Language and Translator",
+    description: "PII detection, redaction, language analysis, and translation",
+    url: "https://learn.microsoft.com/en-us/azure/ai-services/language-service/",
+    keywords: "pii redaction translator mixed language text analysis",
+  },
+  {
+    label: "Integrated vectorization",
+    description: "Indexer-driven chunking, embeddings, and query vectorizers",
+    url: "https://learn.microsoft.com/en-us/azure/search/vector-search-integrated-vectorization",
+    keywords: "text split embedding normalized images ocr indexer",
   },
 ];
 
@@ -297,6 +323,10 @@ function MicrosoftMark() {
 export default function ExamSimulator() {
   const [hydrated, setHydrated] = useState(false);
   const [savedAttempt, setSavedAttempt] = useState<SavedAttempt | null>(null);
+  const [selectionHistory, setSelectionHistory] = useState<SelectionHistory>(
+    createEmptySelectionHistory,
+  );
+  const [historyNotice, setHistoryNotice] = useState("");
   const [screen, setScreen] = useState<ExamScreen>("welcome");
   const [mode, setMode] = useState<ExamMode>("timed");
   const [accepted, setAccepted] = useState(false);
@@ -356,6 +386,26 @@ export default function ExamSimulator() {
     answerIsComplete(question, answers[question.id]),
   ).length;
   const inDecisionSequence = currentSection === "decision";
+  const seenQuestionCount = countSeenQuestionIds(
+    selectionHistory,
+    questionPool.map((question) => question.id),
+  );
+  const decisionSetCount = new Set(
+    questionPool
+      .filter((question) => question.type === "decision")
+      .map((question) => question.decisionSetId ?? "secure-agent-rollout"),
+  ).size;
+  const seenCaseStudyCount = caseStudyPool.filter(
+    (caseStudy) => selectionHistory.caseStudies[caseStudy.id],
+  ).length;
+  const seenDecisionSetCount = Object.keys(selectionHistory.decisionSets).filter(
+    (id) =>
+      questionPool.some(
+        (question) =>
+          question.type === "decision" &&
+          (question.decisionSetId ?? "secure-agent-rollout") === id,
+      ),
+  ).length;
 
   function getSectionLabel(section: SectionId) {
     if (section === "general") return "General";
@@ -408,6 +458,15 @@ export default function ExamSimulator() {
 
   useEffect(() => {
     let restoredAttempt: SavedAttempt | null = null;
+    let restoredHistory = createEmptySelectionHistory();
+    try {
+      restoredHistory = parseSelectionHistory(
+        window.localStorage.getItem(HISTORY_STORAGE_KEY),
+      );
+    } catch {
+      // Storage can be unavailable in restrictive browser modes. A fresh local
+      // rotation still leaves the exam fully usable.
+    }
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
@@ -436,6 +495,7 @@ export default function ExamSimulator() {
 
     const hydrationFrame = window.requestAnimationFrame(() => {
       setSavedAttempt(restoredAttempt);
+      setSelectionHistory(restoredHistory);
       setHydrated(true);
     });
     return () => window.cancelAnimationFrame(hydrationFrame);
@@ -544,7 +604,15 @@ export default function ExamSimulator() {
 
   function resetAttempt(nextMode: ExamMode = mode) {
     const nextSeed = createAttemptSeed();
-    const nextSelection = createExamSelection(questionPool, caseStudyPool, nextSeed);
+    const nextSelection = createExamSelection(
+      questionPool,
+      caseStudyPool,
+      nextSeed,
+      selectionHistory,
+    );
+    const nextHistory = recordExamSelection(selectionHistory, nextSelection);
+    setSelectionHistory(nextHistory);
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(nextHistory));
     setOptionSeed(nextSeed);
     setQuestionIds(nextSelection.questions.map((question) => question.id));
     setMode(nextMode);
@@ -570,7 +638,15 @@ export default function ExamSimulator() {
     setExpandedResult(null);
     setSavedAttempt(null);
     setNotice("");
+    setHistoryNotice("");
     window.localStorage.removeItem(STORAGE_KEY);
+  }
+
+  function resetQuestionHistory() {
+    const emptyHistory = createEmptySelectionHistory();
+    setSelectionHistory(emptyHistory);
+    window.localStorage.removeItem(HISTORY_STORAGE_KEY);
+    setHistoryNotice("Question history reset. Your next attempt will start a fresh rotation.");
   }
 
   function startNew(nextMode: ExamMode) {
@@ -814,6 +890,25 @@ export default function ExamSimulator() {
                 </small>
               </button>
             )}
+            <div className="coverage-summary" aria-label="Question rotation coverage">
+              <div className="coverage-summary-row">
+                <span>Question rotation</span>
+                <strong>{seenQuestionCount} / {questionPool.length} seen</strong>
+              </div>
+              <progress max={questionPool.length} value={seenQuestionCount} />
+              <small>
+                {seenCaseStudyCount}/{caseStudyPool.length} case studies · {seenDecisionSetCount}/{decisionSetCount} decision sequences
+              </small>
+              <button
+                className="history-reset-button"
+                type="button"
+                onClick={resetQuestionHistory}
+                disabled={selectionHistory.attemptsStarted === 0}
+              >
+                Reset question history
+              </button>
+              {historyNotice && <span className="history-notice" role="status">{historyNotice}</span>}
+            </div>
             <p className="privacy-note">No sign-in. No data leaves your browser.</p>
           </div>
         </section>
@@ -957,6 +1052,19 @@ export default function ExamSimulator() {
                   <strong>{item.correct}/{item.total}</strong>
                 </div>
               ))}
+            </div>
+          </div>
+          <div className="coverage-report">
+            <div>
+              <span className="eyebrow">Question rotation</span>
+              <h2>{seenQuestionCount} of {questionPool.length} questions encountered</h2>
+              <p>
+                New attempts prefer unseen and least-recently-seen items while preserving the exam blueprint.
+              </p>
+            </div>
+            <div className="coverage-report-facts">
+              <span><strong>{seenCaseStudyCount}/{caseStudyPool.length}</strong> cases</span>
+              <span><strong>{seenDecisionSetCount}/{decisionSetCount}</strong> decision sequences</span>
             </div>
           </div>
           <div className="review-report">

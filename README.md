@@ -1,6 +1,6 @@
 # AI-103 Practice Exam
 
-![AI-103 Practice Exam](public/og.png)
+![AI-103 Practice Exam](public/og-v2.png)
 
 An unofficial, browser-based practice environment for **AI-103: Developing AI Apps and Agents on Azure**.
 
@@ -11,17 +11,18 @@ The simulator provides a full 51-question attempt, timed and study modes, a case
 
 ## Features
 
-- 153 original, blueprint-aligned questions
+- 226 original, blueprint-aligned questions
 - 51 questions selected for each attempt
-- One seven-question, 15-paragraph case study selected from a pool of five
-- 41 independent scenarios selected from a pool of 115
-- Three final Yes/No decision items that lock as you advance
+- One seven-question, long-form case study selected from a pool of seven
+- 41 independent scenarios selected from a pool of 165
+- One three-item Yes/No decision sequence selected from a pool of four sequences
+- History-aware question rotation that prefers unseen and least-recently-seen items
 - Fresh question and answer ordering for every new attempt
 - Exact blueprint-balanced domain coverage in every attempt
 - 100-minute exam clock and an untimed study mode
 - Exactly 17 interactive or special-format items per attempt (about 33%)
 - An exact per-run mix of 27 single-choice, 7 multiple-response, 9 code-completion, 5 other interactive, and 3 decision items
-- A 30-item code pool covering Python, JSON, HTTP/REST, and Azure CLI, plus build-list, matching, matrix, and Yes/No formats
+- A 42-item code pool covering Python, JSON, HTTP/REST, and Azure CLI, plus build-list, matching, matrix, and Yes/No formats
 - Deliberately close distractors drawn from the same service, SDK, role, API, or architectural family
 - Mark for review, private notes, review screens, timed breaks, and section locks
 - Automatic progress saving in the browser
@@ -42,9 +43,9 @@ Every attempt contains 51 questions distributed as follows:
 | Implement text analysis solutions | 10–15% | 7 |
 | Implement information extraction solutions | 10–15% | 7 |
 
-The delivery order is 41 reviewable independent questions, one reviewable seven-question case study, and a final three-item Yes/No sequence. Each case study contains 15 paragraphs (about 600 or more words) distributed across several tabs to reproduce the sustained reading and cross-referencing workload described in public delivery reports. In the final sequence, each answer becomes permanent when you advance and there is no section review screen.
+The delivery order is 41 reviewable independent questions, one reviewable seven-question case study, and a final three-item Yes/No sequence. Each case study contains 12–16 substantive paragraphs and 600–900 words distributed across several tabs to reproduce a sustained reading and cross-referencing workload. In the final sequence, each answer becomes permanent when you advance and there is no section review screen.
 
-The question selection and displayed answer order are seeded for each attempt. They remain stable while navigating or resuming an attempt, but a new attempt produces a different selection and ordering. The selector holds both the domain distribution and the item-format mix constant, including nine code-completion questions and 17 interactive or special-format items, rather than allowing either mix to vary widely between runs.
+The question selection and displayed answer order are seeded for each attempt. They remain stable while navigating or resuming an attempt, but a new attempt produces a different selection and ordering. The selector holds both the domain distribution and the item-format mix constant, including nine code-completion questions and 17 interactive or special-format items. Within those hard constraints, it prefers questions, case studies, and decision sequences that the current browser has not seen recently.
 
 ## Fidelity calibration
 
@@ -146,7 +147,7 @@ The workflow follows GitHub's [custom Pages workflow](https://docs.github.com/en
 
 ## Progress and privacy
 
-Attempt progress, answers, flags, and private notes are saved only in the browser's local storage. The application does not send exam data to a server and does not include analytics or tracking.
+Attempt progress, answers, flags, private notes, and question-rotation history are saved only in the browser's local storage. The application does not send exam data to a server and does not include analytics or tracking. The entry screen shows local coverage and provides a dedicated **Reset question history** control.
 
 Browser data is specific to the site origin. Changing the port, hostname, browser profile, or device creates a separate local save. Clearing site data removes saved attempts.
 
@@ -155,8 +156,10 @@ Browser data is specific to the site origin. Changing the port, hostname, browse
 | Path | Description |
 | --- | --- |
 | `app/ExamSimulator.tsx` | Exam screens, navigation, scoring, review, and persistence |
-| `app/questions.ts` | Case studies, original question bank, explanations, and sources |
-| `app/questionSelection.ts` | Per-attempt case and question selection with blueprint balancing |
+| `app/questions.ts` | Core question types, legacy bank, shared cases, and public exports |
+| `app/questionBank/` | Modular domain expansions, cases, decision sequences, metadata, and sources |
+| `app/questionSelection.ts` | Per-attempt selection with blueprint, format, code-language, and history balancing |
+| `app/questionHistory.ts` | Device-local exposure history and coverage accounting |
 | `app/optionShuffle.ts` | Seeded answer-order randomization |
 | `app/globals.css` | Responsive simulator styling |
 | `static-site/` | Browser entry point for the standalone static build |
@@ -188,7 +191,7 @@ Experience-only calibration:
 
 Each question also contains a direct source link for the capability being tested.
 
-The expanded coverage deliberately exercises areas that can be easy to under-practice in overview modules: Foundry resource creation and CLI operations, current RBAC roles and scopes, project connections, private networking, authentication and HTTP error diagnosis, Prompt Shields, image inpainting and mask requirements, video analysis, Speech REST and batch modes, Document Intelligence versus Content Understanding, and Azure AI Search schemas, vector profiles, analyzers, and immutable field attributes.
+The expanded coverage deliberately exercises areas that can be easy to under-practice in overview modules: Foundry resource creation and CLI operations, current RBAC roles and scopes, project connections, private networking, continuous evaluation, per-user agent memory, file search, deterministic tool use, PII redaction, mixed-language Translator behavior, Custom Speech model lifecycle, Prompt Shields, image inpainting and mask requirements, multimodal safety, Document Intelligence versus Content Understanding, normalized images, and integrated vectorization.
 
 ## Contributing questions
 
@@ -199,8 +202,9 @@ Contributions should preserve the integrity of the project:
 3. Align each item to a current AI-103 objective.
 4. Cite an authoritative Microsoft Learn page that supports the correct answer.
 5. Include a useful explanation of why the answer is correct.
-6. Keep question IDs unique and preserve all configured answer types.
-7. Run `npm test` before opening a pull request.
+6. Assign a stable `skillId`, focused topic tags, a variant group, and a verification date.
+7. Keep question IDs unique and preserve all configured answer types.
+8. Run `npm test` before opening a pull request.
 
 ## Troubleshooting
 
@@ -224,7 +228,7 @@ Follow the alternative local URL printed by the development server, or stop the 
 
 ### A previous attempt keeps appearing
 
-Start a new attempt from the simulator. To remove all locally saved progress, clear site data for the simulator's local URL in your browser settings.
+Start a new attempt from the simulator. Use **Reset question history** on the entry screen to restart question rotation without affecting source files. To remove all locally saved data, clear site data for the simulator's local URL in your browser settings.
 
 ## Disclaimer
 
@@ -235,5 +239,3 @@ Passing this practice simulator does not guarantee a passing result on the certi
 ## License
 
 This project is available under the [MIT License](LICENSE).
-
-SE

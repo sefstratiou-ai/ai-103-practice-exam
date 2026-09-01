@@ -7,6 +7,7 @@ import {
   type SectionId,
 } from "./questions";
 import { mixSeed, shuffleWithSeed } from "./optionShuffle";
+import type { ExposureRecord, SelectionHistory } from "./questionHistory";
 
 export const EXAM_QUESTION_COUNT = 51;
 export const CASE_STUDY_COUNT = 1;
@@ -48,7 +49,55 @@ export type ExamSelection = {
   questions: Question[];
   caseStudies: CaseStudy[];
   sectionOrder: SectionId[];
+  decisionSetId: string;
 };
+
+function orderByExposure<T>(
+  items: readonly T[],
+  seed: number,
+  records: Record<string, ExposureRecord> | undefined,
+  keyFor: (item: T) => string | number,
+) {
+  const seeded = shuffleWithSeed(items, seed);
+  if (!records) return seeded;
+  return seeded.sort((left, right) => {
+    const leftRecord = records[String(keyFor(left))] ?? { seenCount: 0, lastSeenAttempt: 0 };
+    const rightRecord = records[String(keyFor(right))] ?? { seenCount: 0, lastSeenAttempt: 0 };
+    return (
+      leftRecord.seenCount - rightRecord.seenCount ||
+      leftRecord.lastSeenAttempt - rightRecord.lastSeenAttempt
+    );
+  });
+}
+
+function compareQuestionSets(
+  left: readonly Question[],
+  right: readonly Question[],
+  history: SelectionHistory | undefined,
+) {
+  if (!history) return 0;
+  const score = (items: readonly Question[]) => ({
+    seen: items.reduce(
+      (sum, question) => sum + (history.questions[question.id]?.seenCount ?? 0),
+      0,
+    ),
+    recent: items.filter(
+      (question) =>
+        history.questions[question.id]?.lastSeenAttempt === history.attemptsStarted,
+    ).length,
+    lastSeen: items.reduce(
+      (sum, question) => sum + (history.questions[question.id]?.lastSeenAttempt ?? 0),
+      0,
+    ),
+  });
+  const leftScore = score(left);
+  const rightScore = score(right);
+  return (
+    leftScore.recent - rightScore.recent ||
+    leftScore.seen - rightScore.seen ||
+    leftScore.lastSeen - rightScore.lastSeen
+  );
+}
 
 export function getQuestionFormatGroup(question: Question): QuestionFormatGroup {
   if (question.type === "single") return "single";
@@ -105,11 +154,27 @@ export function createExamSelectionFromIds(
   if (selectedQuestions.some((question) => question.section === "decision")) {
     sectionOrder.push("decision");
   }
+  const selectedDecisionQuestions = selectedQuestions.filter(
+    (question) => question.type === "decision",
+  );
+  const decisionSetIds = [
+    ...new Set(
+      selectedDecisionQuestions
+        .map((question) => question.decisionSetId ?? "secure-agent-rollout"),
+    ),
+  ];
+  if (
+    decisionSetIds.length !== 1 ||
+    selectedDecisionQuestions.length !== DECISION_QUESTION_COUNT
+  ) {
+    throw new Error("A saved exam selection must contain one complete decision sequence.");
+  }
 
   return {
     questions: selectedQuestions,
     caseStudies: selectedCaseStudies,
     sectionOrder,
+    decisionSetId: decisionSetIds[0],
   };
 }
 
@@ -126,14 +191,17 @@ export function createExamSelection(
   allQuestions: readonly Question[],
   allCaseStudies: readonly CaseStudy[],
   attemptSeed: number,
+  history?: SelectionHistory,
 ): ExamSelection {
   if (allCaseStudies.length < CASE_STUDY_COUNT) {
     throw new Error(`The exam requires at least ${CASE_STUDY_COUNT} case studies.`);
   }
 
-  const selectedCaseStudies = shuffleWithSeed(
+  const selectedCaseStudies = orderByExposure(
     allCaseStudies,
     mixSeed(attemptSeed, 50_000),
+    history?.caseStudies,
+    (caseStudy) => caseStudy.id,
   ).slice(0, CASE_STUDY_COUNT);
 
   const caseQuestions = selectedCaseStudies.flatMap((caseStudy, caseIndex) => {
@@ -147,16 +215,36 @@ export function createExamSelection(
   });
 
   const decisionPool = allQuestions.filter(
-    (question) => question.section === "decision",
+    (question): question is Extract<Question, { type: "decision" }> =>
+      question.section === "decision" && question.type === "decision",
   );
-  if (decisionPool.length !== DECISION_QUESTION_COUNT) {
+  const decisionSetsById = new Map<
+    string,
+    Extract<Question, { type: "decision" }>[]
+  >();
+  for (const question of decisionPool) {
+    const decisionSetId = question.decisionSetId ?? "secure-agent-rollout";
+    const group = decisionSetsById.get(decisionSetId) ?? [];
+    group.push(question);
+    decisionSetsById.set(decisionSetId, group);
+  }
+  const decisionSets = [...decisionSetsById].map(([id, group]) => ({ id, group }));
+  if (
+    decisionSets.length === 0 ||
+    decisionSets.some(({ group }) => group.length !== DECISION_QUESTION_COUNT)
+  ) {
     throw new Error(
-      `The decision sequence must contain exactly ${DECISION_QUESTION_COUNT} questions.`,
+      `Every decision sequence must contain exactly ${DECISION_QUESTION_COUNT} questions.`,
     );
   }
-  const decisionQuestions = shuffleWithSeed(
-    decisionPool,
+  const selectedDecisionSet = orderByExposure(
+    decisionSets,
     mixSeed(attemptSeed, 52_000),
+    history?.decisionSets,
+    (decisionSet) => decisionSet.id,
+  )[0];
+  const decisionQuestions = [...selectedDecisionSet.group].sort(
+    (left, right) => left.id - right.id,
   );
 
   const fixedQuestions = [...caseQuestions, ...decisionQuestions];
@@ -268,6 +356,32 @@ export function createExamSelection(
     });
   }
 
+  function allocationExposureCost(
+    domain: Domain,
+    allocation: FormatAllocation,
+  ) {
+    if (!history) return 0;
+    let recent = 0;
+    let seen = 0;
+    let lastSeen = 0;
+    for (const format of selectableFormatGroups) {
+      const preferred = orderByExposure(
+        generalPools[domain][format],
+        mixSeed(attemptSeed, 53_500 + selectableFormatGroups.indexOf(format)),
+        history.questions,
+        (question) => question.id,
+      ).slice(0, allocation[format]);
+      for (const question of preferred) {
+        const exposure = history.questions[String(question.id)];
+        if (!exposure) continue;
+        if (exposure.lastSeenAttempt === history.attemptsStarted) recent += 1;
+        seen += exposure.seenCount;
+        lastSeen += exposure.lastSeenAttempt;
+      }
+    }
+    return recent * 1_000_000 + seen * 1_000 + lastSeen;
+  }
+
   function findFormatAllocation(
     domainIndex: number,
     remaining: FormatAllocation,
@@ -327,6 +441,13 @@ export function createExamSelection(
       candidates,
       mixSeed(attemptSeed, 53_000 + stateValue),
     );
+    if (history) {
+      randomizedCandidates.sort(
+        (left, right) =>
+          allocationExposureCost(domain, left) -
+          allocationExposureCost(domain, right),
+      );
+    }
 
     for (const candidate of randomizedCandidates) {
       const nextRemaining = Object.fromEntries(
@@ -356,6 +477,7 @@ export function createExamSelection(
       "Unable to satisfy the configured domain and question-format targets with the available general pool.",
     );
   }
+  const resolvedFormatAllocation = formatAllocation;
 
   type CodeQuestion = Extract<Question, { type: "code" }>;
   type CodeLanguage = CodeQuestion["language"];
@@ -390,14 +512,14 @@ export function createExamSelection(
     }
 
     const domain = domains[domainIndex];
-    const required = formatAllocation[domainIndex].code;
+    const required = resolvedFormatAllocation[domainIndex].code;
     const pool = generalPools[domain].code.filter(
       (question): question is CodeQuestion => question.type === "code",
     );
     const candidates = shuffleWithSeed(
       combinations(pool, required),
       mixSeed(attemptSeed, 55_000 + domainIndex),
-    );
+    ).sort((left, right) => compareQuestionSets(left, right, history));
 
     for (const candidate of candidates) {
       const nextLanguages = new Set(languages);
@@ -410,7 +532,7 @@ export function createExamSelection(
           futureDomains.some((futureDomain) => {
             const futureIndex = domains.indexOf(futureDomain);
             return (
-              formatAllocation[futureIndex].code > 0 &&
+              resolvedFormatAllocation[futureIndex].code > 0 &&
               generalPools[futureDomain].code.some(
                 (question) => question.type === "code" && question.language === language,
               )
@@ -447,10 +569,12 @@ export function createExamSelection(
       selectableFormatGroups
         .filter((format) => format !== "code")
         .flatMap((format, formatIndex) =>
-          shuffleWithSeed(
+          orderByExposure(
             generalPools[domain][format],
             mixSeed(attemptSeed, 54_000 + domainIndex * 100 + formatIndex),
-          ).slice(0, formatAllocation[domainIndex][format]),
+            history?.questions,
+            (question) => question.id,
+          ).slice(0, resolvedFormatAllocation[domainIndex][format]),
         ),
     ),
   ];
@@ -492,5 +616,6 @@ export function createExamSelection(
     questions: selectedQuestions,
     caseStudies: selectedCaseStudies,
     sectionOrder: ["general", ...selectedCaseIds, "decision"],
+    decisionSetId: selectedDecisionSet.id,
   };
 }

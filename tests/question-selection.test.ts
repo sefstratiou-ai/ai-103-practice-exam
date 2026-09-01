@@ -3,6 +3,10 @@ import test from "node:test";
 
 import { caseStudies, domains, questions } from "../app/questions";
 import {
+  createEmptySelectionHistory,
+  recordExamSelection,
+} from "../app/questionHistory";
+import {
   CASE_STUDY_COUNT,
   createExamSelection,
   createExamSelectionFromIds,
@@ -70,7 +74,9 @@ test("an attempt selection is deterministic and blueprint balanced", () => {
   }
   assert.ok(
     first.questions.slice(-DECISION_QUESTION_COUNT).every(
-      (question) => question.type === "decision",
+      (question) =>
+        question.type === "decision" &&
+        question.decisionSetId === first.decisionSetId,
     ),
   );
 
@@ -86,6 +92,7 @@ test("an attempt selection is deterministic and blueprint balanced", () => {
 test("different seeds expose broad variety from the complete pool", () => {
   const seenQuestionIds = new Set<number>();
   const seenCaseStudyIds = new Set<string>();
+  const seenDecisionSetIds = new Set<string>();
   const signatures = new Set<string>();
 
   for (let seed = 1; seed <= 500; seed += 1) {
@@ -115,10 +122,55 @@ test("different seeds expose broad variety from the complete pool", () => {
     );
     selection.questions.forEach((question) => seenQuestionIds.add(question.id));
     selection.caseStudies.forEach((caseStudy) => seenCaseStudyIds.add(caseStudy.id));
+    seenDecisionSetIds.add(selection.decisionSetId);
     signatures.add(selection.questions.map((question) => question.id).join(","));
   }
 
   assert.equal(seenQuestionIds.size, questions.length);
   assert.equal(seenCaseStudyIds.size, caseStudies.length);
+  assert.equal(seenDecisionSetIds.size, 4);
   assert.ok(signatures.size >= 490, "nearly every sampled seed should produce a distinct exam");
+});
+
+test("history rotates unseen questions, cases, and decision sequences", () => {
+  let history = createEmptySelectionHistory();
+  let previousGeneralIds = new Set<number>();
+  const firstCycleCases = new Set<string>();
+  const firstCycleDecisionSets = new Set<string>();
+
+  for (let attempt = 1; attempt <= 7; attempt += 1) {
+    const selection = createExamSelection(
+      questions,
+      caseStudies,
+      1_000 + attempt,
+      history,
+    );
+    const generalIds = new Set(
+      selection.questions
+        .filter((question) => question.section === "general")
+        .map((question) => question.id),
+    );
+
+    if (attempt > 1) {
+      assert.equal(
+        [...generalIds].filter((id) => previousGeneralIds.has(id)).length,
+        0,
+        `attempt ${attempt} should avoid an immediately repeated general item`,
+      );
+    }
+    if (attempt <= caseStudies.length) {
+      firstCycleCases.add(selection.caseStudies[0].id);
+    }
+    if (attempt <= 4) {
+      firstCycleDecisionSets.add(selection.decisionSetId);
+    }
+
+    history = recordExamSelection(history, selection);
+    previousGeneralIds = generalIds;
+  }
+
+  assert.equal(firstCycleCases.size, caseStudies.length);
+  assert.equal(firstCycleDecisionSets.size, 4);
+  assert.equal(history.attemptsStarted, 7);
+  assert.ok(Object.keys(history.questions).length > EXAM_QUESTION_COUNT);
 });

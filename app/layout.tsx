@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const imageUrl = `${protocol}://${host}/og.png`;
+  const imageUrl = `${protocol}://${host}/og-v2.png`;
 
   return {
     title: "AI-103 Practice Exam | Azure AI Apps and Agents",
@@ -14,9 +14,9 @@ export async function generateMetadata(): Promise<Metadata> {
       "A full-length, unofficial AI-103 practice exam simulator aligned to Microsoft's April 2026 skills outline.",
     openGraph: {
       title: "AI-103 Practice Exam",
-      description: "153 original questions · 51 per attempt · 9 code dropdowns",
+      description: "226 original questions · 51 per attempt · 9 code dropdowns",
       type: "website",
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: "AI-103 Practice Exam" }],
+      images: [{ url: imageUrl, width: 1731, height: 909, alt: "AI-103 Practice Exam" }],
     },
     twitter: {
       card: "summary_large_image",

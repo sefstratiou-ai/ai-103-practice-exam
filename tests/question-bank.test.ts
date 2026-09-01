@@ -8,9 +8,10 @@ import {
   questions,
 } from "../app/questions";
 import { distractorTextOverrides } from "../app/questionEnhancements";
+import { skillCatalog } from "../app/questionBank/metadata";
 
 test("all question definitions are internally consistent", () => {
-  assert.equal(questions.length, 153);
+  assert.equal(questions.length, 226);
   assert.equal(new Set(questions.map((question) => question.id)).size, questions.length);
   assert.equal(new Set(questions.map((question) => question.stem)).size, questions.length);
 
@@ -21,6 +22,11 @@ test("all question definitions are internally consistent", () => {
     assert.ok(domains.includes(question.domain));
     assert.ok(question.objective.length >= 12);
     assert.ok(question.explanation.length >= 60);
+    assert.ok(question.skillId && question.skillId in skillCatalog);
+    assert.ok((question.topicTags?.length ?? 0) > 0);
+    assert.match(question.lastVerified ?? "", /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok((question.variantGroup?.length ?? 0) >= 8);
+    assert.ok(question.lifecycle === "ga" || question.lifecycle === "preview");
     assert.match(question.source.url, /^https:\/\/learn\.microsoft\.com\//);
     assert.notEqual(
       question.source.label,
@@ -106,12 +112,25 @@ test("all question definitions are internally consistent", () => {
   }
   assert.equal(
     questions.filter((question) => question.section === "general").length,
-    115,
+    165,
   );
   assert.equal(
     questions.filter((question) => question.section === "decision").length,
-    3,
+    12,
   );
+  const decisionSets = new Map<string, typeof questions>();
+  for (const question of questions.filter((item) => item.type === "decision")) {
+    const decisionSetId = question.decisionSetId ?? "";
+    decisionSets.set(decisionSetId, [
+      ...(decisionSets.get(decisionSetId) ?? []),
+      question,
+    ]);
+  }
+  assert.equal(decisionSets.size, 4);
+  for (const [decisionSetId, items] of decisionSets) {
+    assert.ok(decisionSetId);
+    assert.equal(items.length, 3, `${decisionSetId} contains three linked decisions`);
+  }
 });
 
 test("the expanded code bank covers every domain and varied blank counts", () => {
@@ -120,7 +139,7 @@ test("the expanded code bank covers every domain and varied blank counts", () =>
       question.type === "code",
   );
 
-  assert.equal(codeQuestions.length, 30);
+  assert.equal(codeQuestions.length, 42);
   assert.deepEqual(
     Object.fromEntries(
       ["python", "json", "http", "azurecli"].map((language) => [
@@ -128,7 +147,7 @@ test("the expanded code bank covers every domain and varied blank counts", () =>
         codeQuestions.filter((question) => question.language === language).length,
       ]),
     ),
-    { python: 12, json: 8, http: 7, azurecli: 3 },
+    { python: 18, json: 12, http: 8, azurecli: 4 },
   );
   assert.ok(codeQuestions.some((question) => question.blanks.length === 2));
   assert.ok(codeQuestions.some((question) => question.blanks.length === 3));
@@ -194,6 +213,30 @@ test("selected-response distractors are deliberately rewritten and avoid answer-
   }
 });
 
+test("question stems do not contain near-duplicate scenarios", () => {
+  const tokens = (value: string) =>
+    new Set(
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, " ")
+        .split(/ +/)
+        .filter((token) => token.length > 2),
+    );
+
+  for (let leftIndex = 0; leftIndex < questions.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < questions.length; rightIndex += 1) {
+      const left = tokens(questions[leftIndex].stem);
+      const right = tokens(questions[rightIndex].stem);
+      const intersection = [...left].filter((token) => right.has(token)).length;
+      const union = new Set([...left, ...right]).size;
+      assert.ok(
+        intersection / union < 0.85,
+        `questions ${questions[leftIndex].id} and ${questions[rightIndex].id} are too similar`,
+      );
+    }
+  }
+});
+
 test("correct JSON code completions parse successfully", () => {
   const jsonQuestions = questions.filter(
     (question): question is Extract<(typeof questions)[number], { type: "code" }> =>
@@ -235,7 +278,7 @@ test("correct Python code completions parse successfully when Python is availabl
       const blank = question.blanks.find((item) => item.id === blankId)!;
       return blank.options.find((option) => option.id === question.correct[blankId])!.text;
     });
-    const parsed = spawnSync(
+    const parsed: ReturnType<typeof spawnSync> = spawnSync(
       runtime.command,
       [...runtime.prefix, "-c", "import ast,sys; ast.parse(sys.stdin.read())"],
       { input: completed, encoding: "utf8" },

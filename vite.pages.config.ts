@@ -24,7 +24,7 @@ export default defineConfig(() => {
   const base = normalizeBasePath(process.env.PAGES_BASE_PATH);
   const configuredSiteUrl = process.env.PAGES_BASE_URL?.replace(/\/+$/g, "");
   const siteUrl = configuredSiteUrl || base;
-  const socialImageUrl = joinUrl(siteUrl, "og.png");
+  const socialImageUrl = joinUrl(siteUrl, "og-v2.png");
 
   return {
     root: staticSiteRoot,
