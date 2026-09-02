@@ -1278,6 +1278,13 @@ textarea:focus-visible {
 .result-meta { align-items: center; border-top: 1px solid var(--line); display: flex; justify-content: space-between; margin-top: 18px; padding-top: 16px; }
 .result-meta > span { margin: 0 !important; text-transform: none !important; }
 .result-meta a { color: var(--blue); font-size: 0.78rem; font-weight: 700; text-decoration: none; }
+
+.question-card .study-feedback { border: 1px solid var(--soft-line); border-radius: 10px; border-left-width: 4px; margin-top: 18px; padding: 18px 22px; }
+.study-feedback.correct { border-left-color: var(--green); }
+.study-feedback.incorrect { border-left-color: var(--red); }
+.study-feedback-header { align-items: center; display: flex; gap: 10px; }
+.study-feedback-header .result-number { flex-shrink: 0; height: 26px; width: 26px; }
+.study-feedback-header strong { font-size: 0.92rem; }
 .empty-state { color: var(--muted); padding: 30px; text-align: center; }
 .results-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 30px; }
 
