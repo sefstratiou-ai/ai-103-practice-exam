@@ -879,7 +879,7 @@ export default function ExamSimulator() {
             </button>
             <button className="mode-card" onClick={() => startNew("study")}>
               <span className="mode-icon light">∞</span>
-              <span><strong>Study run</strong><small>Untimed · explanations after submission</small></span>
+              <span><strong>Study run</strong><small>Untimed · instant feedback and explanations</small></span>
               <span className="mode-arrow">→</span>
             </button>
             {savedAttempt && (
@@ -1270,6 +1270,31 @@ export default function ExamSimulator() {
                 onSetMapAnswer={setMapAnswer}
               />
               {notice && <div className="inline-notice" role="status">{notice}</div>}
+              {mode === "study" && !inDecisionSequence && answerIsComplete(currentQuestion, answers[currentId]) && (
+                <div className={`study-feedback result-detail ${answerIsCorrect(currentQuestion, answers[currentId]) ? "correct" : "incorrect"}`} role="status">
+                  <div className="study-feedback-header">
+                    <span className="result-number">{answerIsCorrect(currentQuestion, answers[currentId]) ? "✓" : "×"}</span>
+                    <strong>{answerIsCorrect(currentQuestion, answers[currentId]) ? "Correct" : "Not quite"}</strong>
+                  </div>
+                  <div><span>Correct answer</span><pre>{correctAnswerText(currentQuestion)}</pre></div>
+                  {answerRationales(currentQuestion, answers[currentId]).length > 0 && (
+                    <div className="answer-rationales">
+                      <span>Choice analysis</span>
+                      {answerRationales(currentQuestion, answers[currentId]).map((item, index) => (
+                        <div className={item.correct ? "rationale correct" : "rationale incorrect"} key={`${item.label}-${index}`}>
+                          <strong>{item.label}</strong>
+                          <p>{item.rationale}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div><span>Explanation</span><p>{currentQuestion.explanation}</p></div>
+                  <div className="result-meta">
+                    <span>{currentQuestion.objective}</span>
+                    <a href={currentQuestion.source.url} target="_blank" rel="noreferrer">Open {currentQuestion.source.label} ↗</a>
+                  </div>
+                </div>
+              )}
               <div className="question-extras">
                 {!inDecisionSequence && (
                   <button className={marked.includes(currentId) ? "marked" : ""} onClick={toggleMarked}>
