@@ -151,6 +151,8 @@ Attempt progress, answers, flags, private notes, and question-rotation history a
 
 Browser data is specific to the site origin. Changing the port, hostname, browser profile, or device creates a separate local save. Clearing site data removes saved attempts.
 
+In timed mode, starting a break permanently locks every question you have viewed, including the current question, even if it is unanswered or marked for review. The confirmation shows how many currently accessible viewed questions will lock and how many are unanswered or marked, so you can cancel and review them first. The exam clock continues during the break. Resuming moves to the next available question, or to section review if no later questions are available. Study-mode breaks keep questions available and return to the same question.
+
 ## Project structure
 
 | Path | Description |

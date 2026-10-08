@@ -385,6 +385,18 @@ export default function ExamSimulator() {
   const answeredCount = examQuestions.filter((question) =>
     answerIsComplete(question, answers[question.id]),
   ).length;
+  const questionsToLockOnBreak = examQuestions.filter(
+    (question) =>
+      viewed.includes(question.id) &&
+      !lockedQuestions.includes(question.id) &&
+      !lockedSections.includes(question.section),
+  );
+  const unansweredBeforeBreak = questionsToLockOnBreak.filter(
+    (question) => !answerIsComplete(question, answers[question.id]),
+  ).length;
+  const markedBeforeBreak = questionsToLockOnBreak.filter(
+    (question) => marked.includes(question.id),
+  ).length;
   const inDecisionSequence = currentSection === "decision";
   const seenQuestionCount = countSeenQuestionIds(
     selectionHistory,
@@ -993,7 +1005,7 @@ export default function ExamSimulator() {
                 <li>No lab section in this calibration; Microsoft can vary live exam forms</li>
                 <li>Case-study answers lock after that section; each final Yes/No answer locks as you advance</li>
                 <li>Microsoft Learn references are available during the run, and the exam clock continues while you use them</li>
-                {mode === "timed" && <li>The clock continues during breaks; viewed items lock when a break starts</li>}
+                {mode === "timed" && <li>The clock continues during breaks. All viewed questions, including your current question, lock when a break starts; resuming moves to the next available question.</li>}
               </ul>
             </div>
             <div className="domain-list-card">
@@ -1360,8 +1372,8 @@ export default function ExamSimulator() {
           title="Take a break?"
           body={
             mode === "timed"
-              ? `The timer will continue. The ${viewed.length} question${viewed.length === 1 ? "" : "s"} you have viewed will lock when the break starts.`
-              : "Your study timer is not enforced, and questions will remain available."
+              ? `The exam clock will keep running. Starting this break will permanently lock ${questionsToLockOnBreak.length} viewed question${questionsToLockOnBreak.length === 1 ? "" : "s"}, including your current question. Unanswered: ${unansweredBeforeBreak}. Marked for review: ${markedBeforeBreak}. Answer or review these questions before starting your break. When you resume, you will move to the next available question, or to section review if no later questions are available.`
+              : "Your study run is untimed, and questions will remain available. When you resume, you will return to your current question."
           }
           confirmLabel="Start break"
           onCancel={() => setBreakDialogOpen(false)}
@@ -1373,9 +1385,11 @@ export default function ExamSimulator() {
           <div className="break-card">
             <span className="break-symbol">Ⅱ</span>
             <span className="eyebrow">Break in progress</span>
-            <h1 id="break-title">The exam clock is still running</h1>
+            <h1 id="break-title">{mode === "timed" ? "The exam clock is still running" : "Your study run is on a break"}</h1>
             <div className="break-clock">{mode === "timed" ? formatClock(remainingSeconds) : "UNTIMED"}</div>
-            <p>You cannot return to questions viewed before this break in the timed simulation.</p>
+            <p>{mode === "timed"
+              ? "All questions viewed before this break, including your current question, are now locked. When you resume, you will move to the next available question, or to section review if no later questions are available."
+              : "Your questions remain available. When you resume, you will return to your current question."}</p>
             <button className="primary-button" onClick={resumeFromBreak}>Resume exam</button>
           </div>
         </div>
@@ -1613,7 +1627,7 @@ function HelpDialog({ onClose }: { onClose: () => void }) {
           <li>Use Review to locate unanswered and marked items.</li>
           <li>Finishing a case-study section permanently locks it.</li>
           <li>The final three Yes/No items lock one at a time and cannot be reviewed.</li>
-          <li>In the timed mode, starting a break locks questions you have already viewed.</li>
+          <li>In timed mode, starting a break permanently locks all viewed questions, including your current question, even if unanswered or marked for review. Resuming moves to the next available question, or to section review if no later questions are available.</li>
           <li>The exam clock continues while Microsoft Learn references are open.</li>
           <li>Explanations appear only after you submit the full attempt.</li>
         </ul>
